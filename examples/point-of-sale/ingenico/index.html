@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="SecureSubmit Ingenico iPP320 end-to-end payment example using tokenization.">
+    <meta name="author" content="Russell Everett">
+    <title>Simple Payment Form Demo</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="assets/secure.submit-1.1.2.js"></script>
+    <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+</head>
+<body class="container">
+    <h1>Heartland Ingenico Pinpad Swipe Demo</h1>
+    <table class="table table-striped">
+        <tr>
+            <th>&nbsp;</th>
+            <th>SKU</th>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+        <tr>
+            <td><img src="assets/bananas.png" /></td>
+            <td><i>BA0001</i></td>
+            <td><strong>Very Tasty Banana Bundle</strong>
+            <td>2</td>
+            <td>$4.99</td>
+        </tr>
+        <tr>
+            <td><img src="assets/oranges.png" /></td>
+            <td><i>OR1021</i></td>
+            <td><strong>High Vitamin C, Certified Organic, Sun-Grown Oranges</strong>
+            <td>5</td>
+            <td>$12.99</td>
+        </tr>
+        <tr>
+            <td><img src="assets/apples.png" /></td>
+            <td><i>AP1973</i></td>
+            <td><strong>Certified Organic Granny Smith Green Apples</strong>
+            <td>10</td>
+            <td>$10.99</td>
+        </tr>
+        <tr>
+            <td colspan="3">&nbsp;</td>
+            <td><strong>Total:</strong></td>
+            <td>$28.97</td>
+        </tr>
+        <tr>
+            <td colspan="3">&nbsp;</td>
+            <td><button class="btn btn-lg reset-button"><span class="glyphicon glyphicon-remove"></span>&nbsp;Cancel</button></td>
+            <td><button id="chargeButton" class="btn btn-lg btn-primary"><span class="glyphicon glyphicon-credit-card"></span>&nbsp;Charge Card</button></td>
+        </tr>
+    </table>
+
+    <applet id="applet" archive="lib/HPM.jar" code="com.hps.pinpad.ingenico.iPP320" height="1" width="1">
+        <param name="IpAddress" value="10.12.220.88">
+        <param name="Port" value="12000">
+        <param value="SwipeCallback" name="callback">
+    </applet>
+
+    <div class="modal fade" id="payModal" tabindex="-1" role="dialog" aria-labelledby="payTitle" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                    <h4 class="modal-title">Charge Card $28.97</h4>
+                </div>
+                <div class="modal-body" style="text-align: center;">
+                    <h1><span class="glyphicon glyphicon-credit-card"></span>&nbsp;Swipe Credit Card</h1>
+                    <form class="payment_form form-horizontal" id="payment_form" action="charge.php"></form>
+                    <h1 style="display: none" id="processingText">Processing Swipe...</h1>
+                    <h1 style="display: none" id="tokenizingText">Tokenizing Encrypted Card...</h1>
+                    <h1 style="display: none" id="chargingText">Charging Card...</h1>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default reset-button" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var device = null;
+        $(document).ready(function () {
+            device = document.getElementById('applet');
+
+            $('#chargeButton').click(function (e) {
+                e.preventDefault(true);
+
+                device.AddLineItem("Bananas", "4.99");
+                device.AddLineItem("Oranges", "12.99");
+                device.AddLineItem("Apples", "10.99");
+
+                $('#payModal').modal('show');
+                device.CreditSwipe("28.97");
+            });
+
+            $('.reset-button').click(function (e) {
+                device.HardReset();
+                $('#payModal').modal('hide');
+            });
+        })
+
+        var lastMsg = "";
+        function showMessage(msg) {
+            if (lastMsg != "")
+                $(lastMsg).hide();
+
+            if (msg != "")
+                $(msg).show();
+
+            lastMsg = msg;
+        }
+
+        function SwipeCallback(serialNumber, txnNumber, trackNumber, magData, pinBlock, ktb) {
+            showMessage('#processingText');
+
+            if (magData != "") {
+                showMessage('#tokenizingText');
+
+                hps.tokenize_encrypted_card({
+                    data: {
+                        public_key: 'pkapi_cert_P6dRqs1LzfWJ6HgGVZ',
+                        track: magData,
+                        track_number: trackNumber,
+                        ktb: ktb,
+                        pin_block: pinBlock
+                    },
+                    success: function (response) {
+                        showMessage('#chargingText');
+                        device.AuthResponse(serialNumber, txnNumber, "AA", "000000", "Pass Through");
+                        $('#payment_form').append("<input type='hidden' name='securesubmit_token' id='securesubmit_token' value='" + response.token_value + "'/>");
+                        $('#payment_form').submit();
+                    },
+                    error: function (response) {
+                        showMessage("");
+                        alert(response.message);
+                        device.AuthResponse(serialNumber, txnNumber, "N1", "000000", "Declined");
+                        $('#payModal').modal('hide');
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
