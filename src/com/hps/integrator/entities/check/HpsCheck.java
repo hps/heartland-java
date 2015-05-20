@@ -10,7 +10,7 @@ public class HpsCheck {
     private Enums.accountTypeType accountType;
     private Enums.dataEntryModeType dataEntryMode;
     private Enums.checkTypeType checkType;
-    private String checkVerify;
+    private boolean checkVerify;
     private String secCode;
     private HpsCheckHolder checkHolder;
 
@@ -47,11 +47,11 @@ public class HpsCheck {
         this.micrNumber = micrNumber;
     }
 
-    public String getCheckVerify() {
+    public boolean getCheckVerify() {
         return checkVerify;
     }
 
-    public void setCheckVerify(String checkVerify) {
+    public void setCheckVerify(boolean checkVerify) {
         this.checkVerify = checkVerify;
     }
 

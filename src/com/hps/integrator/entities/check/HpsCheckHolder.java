@@ -7,7 +7,7 @@ public class HpsCheckHolder extends HpsConsumer {
     private String dlNumber;
     private String dlState;
     private String ssn4;
-    private Integer dobYear;
+    private String dobYear;
     private String courtesyCard;
 
     public String getCheckName() {
@@ -42,11 +42,11 @@ public class HpsCheckHolder extends HpsConsumer {
         this.ssn4 = ssn4;
     }
 
-    public Integer getDobYear() {
+    public String getDobYear() {
         return dobYear;
     }
 
-    public void setDobYear(Integer dobYear) {
+    public void setDobYear(String dobYear) {
         this.dobYear = dobYear;
     }
 

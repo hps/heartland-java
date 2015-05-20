@@ -34,7 +34,8 @@ public class CardDataTypeTrackData {
 
     public Object getSimpleValue() {
         Object j = this.value;
-        SoapPrimitive primitive = new SoapPrimitive("http://Hps.Exchange.PosGateway", "value", j != null ? j.toString() : "");
+        TextSoapObject primitive = new TextSoapObject("http://Hps.Exchange.PosGateway", "TrackData");
+        primitive.setText(j!=null?j.toString():"");
         if (this.method != null) {
             AttributeInfo attrInfo = new AttributeInfo();
             attrInfo.setName("method");

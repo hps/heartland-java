@@ -5,13 +5,18 @@ import PosGateway.Exchange.Hps.PosRequestVer10Transaction;
 import PosGateway.Exchange.Hps.PosResponse;
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.batch.HpsBatch;
+import com.hps.integrator.fluent.BatchCloseBuilder;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
 
-public class HpsBatchService extends HpsService {
+public class HpsBatchService extends HpsSoapGatewayService {
 
     public HpsBatchService(IHpsServicesConfig config) throws HpsException {
         super(config);
+    }
+
+    public BatchCloseBuilder close() throws HpsException {
+        return new BatchCloseBuilder(servicesConfig);
     }
 
     public HpsBatch closeBatch() throws HpsException {

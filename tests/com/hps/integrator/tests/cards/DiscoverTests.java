@@ -504,7 +504,7 @@ public class DiscoverTests {
                 TestCardHolders.validCardHolder(), true);
 		assertEquals("00", authResponse.getResponseCode());
 		
-		HpsReportTransactionDetails capture = service.capture(authResponse.getTransactionID());
+		HpsReportTransactionDetails capture = service.captureTxn(authResponse.getTransactionID());
 		assertEquals("00", capture.getResponseCode());
 	}
 
@@ -514,7 +514,7 @@ public class DiscoverTests {
         HpsAuthorization charge = service.charge(new BigDecimal("50"), "usd", TestCreditCards.validDiscover(), TestCardHolders.validCardHolder(), true);
         assertEquals("00", charge.getResponseCode());
 
-        HpsTransaction voidResult = service.voidTransaction(charge.getTransactionID());
+        HpsTransaction voidResult = service.voidTxn(charge.getTransactionID());
         assertEquals("00", voidResult.getResponseCode());
     }
 

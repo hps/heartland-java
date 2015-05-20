@@ -13,6 +13,7 @@ public class HpsServicesConfig implements IHpsServicesConfig {
 	private String developerId;
 	private String siteTrace;
 	private String serviceUri;
+	private String credentialToken;
 	private String secretAPIKey;
 	
 	public int getLicenseId() {
@@ -93,5 +94,13 @@ public class HpsServicesConfig implements IHpsServicesConfig {
 	
 	public void setSecretAPIKey(String secretAPIKey) {
 		this.secretAPIKey = secretAPIKey;
+	}
+
+	public String getCredentialToken() {
+		return credentialToken;
+	}
+
+	public void setCredentialToken(String credentialToken) {
+		this.credentialToken = credentialToken;
 	}
 }

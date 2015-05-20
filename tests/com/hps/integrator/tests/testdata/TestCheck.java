@@ -6,85 +6,50 @@ import com.hps.integrator.entities.check.HpsCheck;
 import com.hps.integrator.entities.check.HpsCheckHolder;
 
 public class TestCheck {
-    public static HpsCheck approve() {
+    public static HpsAddress heartlandAddress() {
         HpsAddress address = new HpsAddress();
-        address.setAddress("6860 Dallas Parkway");
-        address.setCity("Plano");
+
+        address.setAddress("6860 Dallas Pkwy");
+        address.setCity("Irvine");
         address.setState("TX");
         address.setZip("75024");
+        address.setCountry("United States");
 
+        return address;
+    }
+
+    private static HpsCheckHolder checkHolder() {
         HpsCheckHolder checkHolder = new HpsCheckHolder();
-        checkHolder.setAddress(address);
+        checkHolder.setAddress(heartlandAddress());
         checkHolder.setDlNumber("1234567");
         checkHolder.setDlState("TX");
         checkHolder.setFirstName("John");
         checkHolder.setLastName("Doe");
         checkHolder.setPhone("1234567890");
 
+        return checkHolder;
+    }
+
+    public static HpsCheck goodCheck() {
         HpsCheck check = new HpsCheck();
         check.setAccountNumber("24413815");
         check.setRoutingNumber("490000018");
         check.setCheckType(Enums.checkTypeType.PERSONAL);
         check.setSecCode("PPD");
         check.setAccountType(Enums.accountTypeType.CHECKING);
-        check.setCheckHolder(checkHolder);
+        check.setCheckHolder(checkHolder());
 
         return check;
     }
 
-    public static HpsCheck invalidCheckHolder() {
-        HpsAddress address = new HpsAddress();
-        address.setAddress("6860 Dallas Parkway");
-        address.setCity("Plano");
-        address.setState("TX");
-        address.setZip("75024");
-
-        HpsCheckHolder checkHolder = new HpsCheckHolder();
-        checkHolder.setAddress(address);
-        checkHolder.setDlNumber("");
-        checkHolder.setDlState("");
-        checkHolder.setFirstName("John");
-        checkHolder.setLastName("Doe");
-        checkHolder.setPhone("");
-
-        HpsCheck check = new HpsCheck();
-        check.setAccountNumber("24413815");
-        check.setRoutingNumber("490000018");
-        check.setCheckType(Enums.checkTypeType.PERSONAL);
-        check.setSecCode("PPD");
-        check.setAccountType(Enums.accountTypeType.CHECKING);
-        check.setCheckHolder(checkHolder);
-
-        return check;
-    }
-
-    public static HpsCheck decline() {
-        HpsAddress address = new HpsAddress();
-        address.setAddress("6860 Dallas Parkway");
-        address.setCity("Plano");
-        address.setState("TX");
-        address.setZip("75024");
-
-        HpsCheckHolder checkHolder = new HpsCheckHolder();
-        checkHolder.setAddress(address);
-        checkHolder.setDlNumber("1234567");
-        checkHolder.setDlState("TX");
-        checkHolder.setFirstName("John");
-        checkHolder.setLastName("Doe");
-        checkHolder.setPhone("1234567890");
-
-        HpsCheck check = new HpsCheck();
-        check.setAccountNumber("24413815");
+    public static HpsCheck badCheck() {
+        HpsCheck check = goodCheck();
         check.setRoutingNumber("490000034");
-        check.setCheckType(Enums.checkTypeType.PERSONAL);
-        check.setSecCode("PPD");
-        check.setAccountType(Enums.accountTypeType.CHECKING);
-        check.setCheckHolder(checkHolder);
 
         return check;
     }
 
-    public static HpsCheck certification() {
+    public static HpsCheck certCheck() {
         HpsAddress address = new HpsAddress();
         address.setAddress("123 Main St.");
         address.setCity("Downtown");
@@ -98,6 +63,7 @@ public class TestCheck {
         checkHolder.setFirstName("John");
         checkHolder.setLastName("Doe");
         checkHolder.setPhone("8003214567");
+        checkHolder.setDobYear("1985");
 
         HpsCheck check = new HpsCheck();
         check.setAccountNumber("24413815");

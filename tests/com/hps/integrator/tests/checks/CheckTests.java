@@ -19,7 +19,7 @@ public class CheckTests {
     @Test
     public void check_ShouldSale() throws HpsException, HpsCheckException {
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
-        HpsCheckResponse response = service.sale(TestCheck.approve(), new BigDecimal(5.00));
+        HpsCheckResponse response = service.sale(TestCheck.goodCheck(), new BigDecimal(5.00));
         assertNotNull(response);
         assertEquals("0", response.getResponseCode());
     }
@@ -28,7 +28,7 @@ public class CheckTests {
     public void check_ShouldDecline() throws HpsException, HpsCheckException {
         try {
             HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
-            service.sale(TestCheck.decline(), new BigDecimal(5.00));
+            service.sale(TestCheck.badCheck(), new BigDecimal(5.00));
             Assert.fail("The transaction should have thrown an HpsCheckException.");
         } catch (HpsCheckException ex) {
             assertEquals(ex.getCode(), 1);
@@ -39,7 +39,7 @@ public class CheckTests {
     public void check_ShouldThrowHpsCheckException() throws HpsException, HpsCheckException {
         try {
             HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
-            service.sale(TestCheck.invalidCheckHolder(), new BigDecimal(5.00));
+            service.sale(TestCheck.badCheck(), new BigDecimal(5.00));
             Assert.fail("The transaction should have thrown an HpsCheckException.");
         } catch (HpsCheckException ex) {
             Assert.assertEquals(ex.getCode(), 1);
@@ -50,7 +50,7 @@ public class CheckTests {
     public void check_SaleAndVoidWithClientTxnId() throws HpsException, HpsCheckException {
         long clientTransactionId = 10244201;
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
-        HpsCheckResponse response = service.sale(TestCheck.approve(), new BigDecimal("5.00"), clientTransactionId);
+        HpsCheckResponse response = service.sale(TestCheck.goodCheck(), new BigDecimal("5.00"), clientTransactionId);
         assertNotNull(response);
         assertEquals("0", response.getResponseCode());
         assertEquals("Transaction Approved", response.getResponseText());
@@ -62,7 +62,7 @@ public class CheckTests {
     @Test
     public void check_ShouldVoid() throws HpsException, HpsCheckException {
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
-        HpsCheckResponse saleResponse = service.sale(TestCheck.approve(), new BigDecimal(5.00));
+        HpsCheckResponse saleResponse = service.sale(TestCheck.goodCheck(), new BigDecimal(5.00));
         HpsCheckResponse voidResponse = service.voidSale(saleResponse.getTransactionID());
         assertNotNull(voidResponse);
         assertEquals("0", voidResponse.getResponseCode());

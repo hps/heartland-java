@@ -6,20 +6,20 @@ import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.applepay.ecv1.PaymentData3DS;
 import com.hps.integrator.entities.*;
 import com.hps.integrator.entities.credit.*;
+import com.hps.integrator.entities.payplan.HpsPayPlanSchedule;
+import com.hps.integrator.fluent.*;
 import com.hps.integrator.infrastructure.*;
 import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
 import com.hps.integrator.infrastructure.validation.HpsInputValidation;
 import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-/**
- * The HPS credit service.
- */
-public class HpsCreditService extends HpsService {
+public class HpsCreditService extends HpsSoapGatewayService {
 
     public HpsCreditService() throws HpsException {
         super();
@@ -27,6 +27,72 @@ public class HpsCreditService extends HpsService {
 
     public HpsCreditService(IHpsServicesConfig servicesConfig) throws HpsException {
         super(servicesConfig);
+    }
+
+    public CreditAuthPaymentTypeBuilder authorize(BigDecimal amount) throws HpsException {
+        HpsInputValidation.checkAmount(amount);
+        return new CreditAuthPaymentTypeBuilder(new CreditAuthBuilder(servicesConfig, amount));
+    }
+
+    public CreditChargePaymentTypeBuilder charge(BigDecimal amount) throws HpsException {
+        HpsInputValidation.checkAmount(amount);
+        return new CreditChargePaymentTypeBuilder(new CreditChargeBuilder(servicesConfig, amount));
+    }
+
+    public CreditOfflineChargePaymentTypeBuilder offlineCharge(BigDecimal amount) throws HpsException {
+        HpsInputValidation.checkAmount(amount);
+        return new CreditOfflineChargePaymentTypeBuilder(new CreditOfflineChargeBuilder(servicesConfig, amount));
+    }
+
+    public CreditOfflineAuthPaymentTypeBuilder offlineAuth(BigDecimal amount) throws HpsException {
+        HpsInputValidation.checkAmount(amount);
+        return new CreditOfflineAuthPaymentTypeBuilder(new CreditOfflineAuthBuilder(servicesConfig, amount));
+    }
+
+    public CreditCaptureBuilder capture(int transactionId) throws HpsException {
+        return new CreditCaptureBuilder(servicesConfig, transactionId);
+    }
+
+    public CreditEditUsingBuilder edit() throws HpsException {
+        return new CreditEditUsingBuilder(new CreditEditBuilder(servicesConfig));
+    }
+
+    public CreditRefundUsingBuilder refund(BigDecimal amount) throws HpsException {
+        return new CreditRefundUsingBuilder(new CreditRefundBuilder(servicesConfig, amount));
+    }
+
+    public CreditReverseUsingBuilder reverse(BigDecimal amount) throws HpsException {
+        return new CreditReverseUsingBuilder(new CreditReverseBuilder(servicesConfig, amount));
+    }
+
+    public CreditVerifyUsingBuilder verify() throws HpsException {
+        return new CreditVerifyUsingBuilder(new CreditVerifyBuilder(servicesConfig));
+    }
+
+    public CreditVoidBuilder voidTransaction(int transactionId) throws HpsException {
+        return new CreditVoidBuilder(servicesConfig, transactionId);
+    }
+
+    public CreditRecurringPaymentTypeBuilder recurring(BigDecimal amount) throws HpsException {
+        HpsInputValidation.checkAmount(amount);
+        return new CreditRecurringPaymentTypeBuilder(new CreditRecurringBuilder(servicesConfig, amount));
+    }
+
+    public CreditRecurringPaymentTypeBuilder recurring(BigDecimal amount, String scheduleId) throws HpsException {
+        HpsInputValidation.checkAmount(amount);
+        return new CreditRecurringPaymentTypeBuilder(new CreditRecurringBuilder(servicesConfig, amount, scheduleId));
+    };
+
+    public CreditBalanceInquiryUsingBuilder prePaidBalanceInquiry() throws HpsException {
+        return new CreditBalanceInquiryUsingBuilder(new CreditBalanceInquiryBuilder(servicesConfig));
+    }
+
+    public CreditAddValueUsingBuilder prePaidAddValue(BigDecimal amount) throws HpsException {
+        return new CreditAddValueUsingBuilder(new CreditAddValueBuilder(servicesConfig, amount));
+    }
+
+    public CreditCpcEditBuilder cpcEdit(int transactionId) throws HpsException {
+        return new CreditCpcEditBuilder(servicesConfig, transactionId);
     }
 
     public HpsReportTransactionDetails get(int transactionId) throws HpsException {
@@ -99,6 +165,9 @@ public class HpsCreditService extends HpsService {
 
             result.setExceptions(exceptions);
         }
+
+        result.setResponseCode("00");
+        result.setResponseText("");
 
         return result;
     }
@@ -511,23 +580,23 @@ public class HpsCreditService extends HpsService {
         return this.submitAuthorize(transaction, amount, "usd");
     }
 
-    public HpsReportTransactionDetails capture(int transactionId) throws HpsException {
-        return this.capture(transactionId, null, null, null);
+    public HpsReportTransactionDetails captureTxn(int transactionId) throws HpsException {
+        return this.captureTxn(transactionId, null, null, null);
     }
 
-    public HpsReportTransactionDetails capture(int transactionId, HpsDirectMarketData directMarketData) throws HpsException {
-        return this.capture(transactionId, null, null, directMarketData);
+    public HpsReportTransactionDetails captureTxn(int transactionId, HpsDirectMarketData directMarketData) throws HpsException {
+        return this.captureTxn(transactionId, null, null, directMarketData);
     }
 
-    public HpsReportTransactionDetails capture(int transactionId, BigDecimal amount) throws HpsException {
-        return this.capture(transactionId, amount, null, null);
+    public HpsReportTransactionDetails captureTxn(int transactionId, BigDecimal amount) throws HpsException {
+        return this.captureTxn(transactionId, amount, null, null);
     }
 
-    public HpsReportTransactionDetails capture(int transactionId, BigDecimal amount, HpsDirectMarketData directMarketData) throws HpsException {
-        return this.capture(transactionId, amount, null, directMarketData);
+    public HpsReportTransactionDetails captureTxn(int transactionId, BigDecimal amount, HpsDirectMarketData directMarketData) throws HpsException {
+        return this.captureTxn(transactionId, amount, null, directMarketData);
     }
 
-    public HpsReportTransactionDetails capture(int transactionId, BigDecimal amount, BigDecimal gratuity, HpsDirectMarketData directMarketData) throws HpsException {
+    public HpsReportTransactionDetails captureTxn(int transactionId, BigDecimal amount, BigDecimal gratuity, HpsDirectMarketData directMarketData) throws HpsException {
         PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
         PosCreditAddToBatchReqType item = new PosCreditAddToBatchReqType();
         item.GatewayTxnId = transactionId;
@@ -685,7 +754,7 @@ public class HpsCreditService extends HpsService {
         return result;
     }
 
-    public HpsTransaction voidTransaction(int transactionId) throws HpsException {
+    public HpsTransaction voidTxn(int transactionId) throws HpsException {
         if(transactionId <= 0) {
             throw new HpsInvalidRequestException("Invalid transaction ID.");
         }

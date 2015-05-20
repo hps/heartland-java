@@ -6,6 +6,10 @@ import com.hps.integrator.entities.check.HpsCheck;
 import com.hps.integrator.entities.check.HpsCheckHolder;
 import com.hps.integrator.entities.check.HpsCheckResponse;
 import com.hps.integrator.entities.check.HpsCheckResponseDetails;
+import com.hps.integrator.fluent.CheckRecurringBuilder;
+import com.hps.integrator.fluent.CheckSaleBuilder;
+import com.hps.integrator.fluent.CheckVoidBuilder;
+import com.hps.integrator.fluent.CheckVoidUsingBuilder;
 import com.hps.integrator.infrastructure.HpsCheckException;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
@@ -15,9 +19,25 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HpsCheckService extends HpsService {
+public class HpsCheckService extends HpsSoapGatewayService {
     public HpsCheckService(IHpsServicesConfig config) throws HpsException {
         super(config);
+    }
+
+    public CheckRecurringBuilder recurring() {
+        return new CheckRecurringBuilder(servicesConfig);
+    }
+
+    public CheckRecurringBuilder recurring(BigDecimal amount) {
+        return new CheckRecurringBuilder(servicesConfig).withAmount(amount);
+    }
+
+    public CheckSaleBuilder sale(Enums.checkActionType actionType) throws HpsException {
+        return new CheckSaleBuilder(servicesConfig, actionType);
+    }
+
+    public CheckVoidUsingBuilder voidTransaction() throws HpsException {
+        return new CheckVoidUsingBuilder(new CheckVoidBuilder(servicesConfig));
     }
 
     /**
@@ -114,6 +134,11 @@ public class HpsCheckService extends HpsService {
         accountInfo.AccountType = check.getAccountType();
         block1.AccountInfo = accountInfo;
 
+        if(check.getCheckVerify()) {
+            block1.VerifyInfo = new VerifyInfoType();
+            block1.VerifyInfo.CheckVerify = Enums.booleanType.Y;
+        }
+
         if (check.getCheckHolder() != null) {
             ConsumerInfoType consumerInfo = new ConsumerInfoType();
 
@@ -130,6 +155,16 @@ public class HpsCheckService extends HpsService {
             consumerInfo.FirstName = checkHolder.getFirstName();
             consumerInfo.LastName = checkHolder.getLastName();
             consumerInfo.PhoneNumber = checkHolder.getPhone();
+
+            if(checkHolder.getSsn4() != null || checkHolder.getDobYear() != null) {
+                consumerInfo.IdentityInfo = new IdentityInfoType();
+
+                if(checkHolder.getSsn4() != null && !checkHolder.getSsn4().equals(""))
+                    consumerInfo.IdentityInfo.SSNL4 = checkHolder.getSsn4();
+
+                if(checkHolder.getDobYear() != null && !checkHolder.getDobYear().equals(""))
+                    consumerInfo.IdentityInfo.DOBYear = checkHolder.getDobYear();
+            }
 
             block1.ConsumerInfo = consumerInfo;
         }

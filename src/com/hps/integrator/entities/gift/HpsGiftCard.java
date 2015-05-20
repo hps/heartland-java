@@ -6,6 +6,7 @@ public class HpsGiftCard {
     }
 
     private String number;
+    private String alias;
     private int expMonth;
     private int expYear;
     private boolean isTrackData;
@@ -49,5 +50,13 @@ public class HpsGiftCard {
 
     public void setEncryptionData(HpsEncryptionData encryptionData) {
         this.encryptionData = encryptionData;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 }

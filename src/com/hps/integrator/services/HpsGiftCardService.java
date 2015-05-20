@@ -3,6 +3,7 @@ package com.hps.integrator.services;
 import PosGateway.Exchange.Hps.*;
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.gift.*;
+import com.hps.integrator.fluent.*;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.HpsGiftCardAliasAction;
 import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
@@ -14,13 +15,53 @@ import java.math.BigDecimal;
 /**
  * The HPS gift card service.
  */
-public class HpsGiftCardService extends HpsService {
+public class HpsGiftCardService extends HpsSoapGatewayService {
     public HpsGiftCardService() throws HpsException {
         super();
     }
 
     public HpsGiftCardService(IHpsServicesConfig servicesConfig) throws HpsException {
         super(servicesConfig);
+    }
+    
+    public GiftCardActivateBuilder activate(BigDecimal amount, HpsGiftCard giftCard) {
+        return new GiftCardActivateBuilder(servicesConfig, amount, giftCard);
+    }
+
+    public GiftCardAddValueBuilder addValue(BigDecimal amount, HpsGiftCard giftCard) {
+        return new GiftCardAddValueBuilder(servicesConfig, amount, giftCard);
+    }
+
+    public GiftCardAliasBuilder alias(Enums.GiftCardAliasReqBlock1TypeAction action, String alias) {
+        return new GiftCardAliasBuilder(servicesConfig, action, alias);
+    }
+
+    public GiftCardBalanceBuilder balance(HpsGiftCard giftCard) {
+        return new GiftCardBalanceBuilder(servicesConfig, giftCard);
+    }
+
+    public GiftCardDeactivateBuilder deactivate(HpsGiftCard giftCard) {
+        return new GiftCardDeactivateBuilder(servicesConfig, giftCard);
+    }
+
+    public GiftCardReplaceBuilder replace(HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) {
+        return new GiftCardReplaceBuilder(servicesConfig, oldGiftCard, newGiftCard);
+    }
+
+    public GiftCardReverseUsingBuilder reverse(BigDecimal amount) {
+        return new GiftCardReverseUsingBuilder(new GiftCardReverseBuilder(servicesConfig, amount));
+    }
+
+    public GiftCardRewardBuilder reward(HpsGiftCard giftCard, BigDecimal amount) {
+        return new GiftCardRewardBuilder(servicesConfig, amount, giftCard);
+    }
+
+    public GiftCardSaleBuilder sale(HpsGiftCard giftCard, BigDecimal amount) {
+        return new GiftCardSaleBuilder(servicesConfig, amount, giftCard);
+    }
+
+    public GiftCardVoidBuilder voidTransaction(int transactionId) {
+        return new GiftCardVoidBuilder(servicesConfig, transactionId);
     }
 
     /**
@@ -132,7 +173,7 @@ public class HpsGiftCardService extends HpsService {
      * @return The HPS gift Card Balance
      * @throws HpsException
      */
-    public HpsGiftCardBalance balance(HpsGiftCard giftCard) throws HpsException {
+    public HpsGiftCardBalance cardBalance(HpsGiftCard giftCard) throws HpsException {
         PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
         PosGiftCardBalanceReqType item = new PosGiftCardBalanceReqType();
         GiftCardBalanceReqBlock1Type block1 = new GiftCardBalanceReqBlock1Type();
@@ -170,7 +211,7 @@ public class HpsGiftCardService extends HpsService {
      * @return The HPS gift Card Deactivate
      * @throws HpsException
      */
-    public HpsGiftCardDeactivate deactivate(HpsGiftCard giftCard) throws HpsException {
+    public HpsGiftCardDeactivate deactivateCard(HpsGiftCard giftCard) throws HpsException {
         PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
         PosGiftCardDeactivateReqType item = new PosGiftCardDeactivateReqType();
         GiftCardDeactivateReqBlock1Type block1 = new GiftCardDeactivateReqBlock1Type();
@@ -207,7 +248,7 @@ public class HpsGiftCardService extends HpsService {
      * @return The HPS gift Card Replace
      * @throws HpsException
      */
-    public HpsGiftCardReplace replace(HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) throws HpsException {
+    public HpsGiftCardReplace replaceCard(HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) throws HpsException {
         PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
         PosGiftCardReplaceReqType item = new PosGiftCardReplaceReqType();
         GiftCardReplaceReqBlock1Type block1 = new GiftCardReplaceReqBlock1Type();
@@ -350,7 +391,7 @@ public class HpsGiftCardService extends HpsService {
      * @return The HPS gift Card Sale
      * @throws HpsException
      */
-    public HpsGiftCardVoid voidTransaction(int transactionId) throws HpsException {
+    public HpsGiftCardVoid voidTxn(int transactionId) throws HpsException {
         PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
         PosGiftCardVoidReqType item = new PosGiftCardVoidReqType();
         GiftCardVoidReqBlock1Type block1 = new GiftCardVoidReqBlock1Type();

@@ -15,11 +15,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class FullCycleTests {
-    DecryptService decryptService;
+//    DecryptService decryptService;
     HpsCreditService creditService;
 
     public FullCycleTests() throws HpsException {
-        this.decryptService = new DecryptService(TestData.PRIVATE_KEY_FILE_PATH, TestData.PRIVATE_KEY_PASSWORD);
+//        this.decryptService = new DecryptService(TestData.PRIVATE_KEY_FILE_PATH, TestData.PRIVATE_KEY_PASSWORD);
         this.creditService = new HpsCreditService(TestServicesConfig.validServicesConfig());
     }
 
@@ -28,6 +28,7 @@ public class FullCycleTests {
         HpsCharge response = creditService.charge(TestData.VisaPaymentData(), TestCardHolders.validCardHolder(), true);
         assertNotNull(response);
         assertEquals(response.getResponseCode(), "00");
+        System.out.println(response.getTransactionID());
     }
 
     @Test
@@ -36,7 +37,7 @@ public class FullCycleTests {
         assertNotNull(response);
         assertEquals(response.getResponseCode(), "00");
 
-        HpsReportTransactionDetails captureResponse = creditService.capture(response.getTransactionID());
+        HpsReportTransactionDetails captureResponse = creditService.captureTxn(response.getTransactionID());
         assertNotNull(captureResponse);
     }
 
@@ -53,7 +54,7 @@ public class FullCycleTests {
         assertNotNull(response);
         assertEquals(response.getResponseCode(), "00");
 
-        HpsReportTransactionDetails captureResponse = creditService.capture(response.getTransactionID());
+        HpsReportTransactionDetails captureResponse = creditService.captureTxn(response.getTransactionID());
         assertNotNull(captureResponse);
     }
 }

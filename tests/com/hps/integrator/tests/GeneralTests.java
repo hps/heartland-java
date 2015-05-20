@@ -128,7 +128,7 @@ public class GeneralTests {
         HpsAuthorization auth = service.authorize(new BigDecimal("50"), "usd", TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true);
         assertEquals("00", auth.getResponseCode());
 
-        HpsReportTransactionDetails capture = service.capture(auth.getTransactionID(), null, new BigDecimal("25"), null);
+        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), null);
         assertEquals("00", capture.getResponseCode());
     }
 
@@ -149,7 +149,7 @@ public class GeneralTests {
         assertEquals("00", auth.getResponseCode());
 
         HpsDirectMarketData directMarketData = new HpsDirectMarketData("12345", 10, 8);
-        HpsReportTransactionDetails capture = service.capture(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
+        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
         assertEquals("00", capture.getResponseCode());
     }
 
@@ -170,7 +170,7 @@ public class GeneralTests {
         assertEquals("00", auth.getResponseCode());
 
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
-        HpsReportTransactionDetails capture = service.capture(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
+        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
         assertEquals("00", capture.getResponseCode());
     }
 

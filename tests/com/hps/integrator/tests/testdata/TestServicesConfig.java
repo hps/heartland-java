@@ -9,24 +9,10 @@ public class TestServicesConfig {
 
     public static IHpsServicesConfig validServicesConfig() {
         HpsServicesConfig config = new HpsServicesConfig();
+        config.setCredentialToken("pkapi_cert_P6dRqs1LzfWJ6HgGVZ");
         config.setSecretAPIKey("skapi_cert_MYl2AQAowiQAbLp5JesGKh7QFkcizOP2jcX9BrEMqQ");
         config.setDeveloperId("123456");
         config.setVersionNumber("1234");
-        config.setServiceUri(SERVICE_URI);
-
-        return config;
-    }
-
-    public static IHpsServicesConfig validCertServicesConfigWithDescriptor() {
-        HpsServicesConfig config = new HpsServicesConfig();
-        config.setDeveloperId("123456");
-        config.setVersionNumber("1234");
-        config.setDeviceId(1520053);
-        config.setLicenseId(20903);
-        config.setPassword("$Test1234");
-        config.setSiteId(20904);
-        config.setSiteTrace("trace0001");
-        config.setUserName("777700004597");
         config.setServiceUri(SERVICE_URI);
 
         return config;
@@ -50,6 +36,13 @@ public class TestServicesConfig {
         config.setDeveloperId("002914");
         config.setVersionNumber("1510");
         config.setServiceUri(SERVICE_URI);
+
+        return config;
+    }
+
+    public static IHpsServicesConfig validPayPlanConfig() {
+        HpsServicesConfig config = new HpsServicesConfig();
+        config.setSecretAPIKey("skapi_uat_MY5OAAAUrmIFvLDRpO_ufLlFQkgg0Rms2G8WoI1THQ");
 
         return config;
     }

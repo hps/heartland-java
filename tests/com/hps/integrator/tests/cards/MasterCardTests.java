@@ -504,7 +504,7 @@ public class MasterCardTests {
                 TestCardHolders.validCardHolder(), true);
 		assertEquals("00", auth.getResponseCode());
 		
-		HpsReportTransactionDetails capture = service.capture(auth.getTransactionID());
+		HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID());
 		assertEquals("00", capture.getResponseCode());
 	}
 
@@ -514,7 +514,7 @@ public class MasterCardTests {
         HpsAuthorization charge = service.charge(new BigDecimal("50"), "usd", TestCreditCards.validMasterCard(), TestCardHolders.validCardHolder(), true);
         assertEquals("00", charge.getResponseCode());
 
-        HpsTransaction voidResult = service.voidTransaction(charge.getTransactionID());
+        HpsTransaction voidResult = service.voidTxn(charge.getTransactionID());
         assertEquals("00", voidResult.getResponseCode());
     }
 	

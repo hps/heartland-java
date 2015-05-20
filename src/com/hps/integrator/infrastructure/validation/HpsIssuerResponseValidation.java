@@ -43,7 +43,10 @@ public class HpsIssuerResponseValidation {
         creditExceptionCodeToMessage.put(HpsIssuerExceptionCodes.InvalidExpiry, "Card expiration date is invalid.");
         creditExceptionCodeToMessage.put(HpsIssuerExceptionCodes.PinVerification, "Can't verify card pin number.");
         creditExceptionCodeToMessage.put(HpsIssuerExceptionCodes.IncorrectCvc, "The card's security code is incorrect.");
-        creditExceptionCodeToMessage.put(HpsIssuerExceptionCodes.IssuerTimeout, "The card issuer timed-out.");
+        creditExceptionCodeToMessage.put(HpsIssuerExceptionCodes.IssuerTimeout, "The card holder's bank is not replying " +
+                "to the credit card transaction. Try waiting and then rerunning the transaction.");
+        creditExceptionCodeToMessage.put(HpsIssuerExceptionCodes.IncorrectNumber, "Account number entered incorrectly " +
+                "(bad swipe or mistyped). Verify account number and re-enter (or re-swipe if card is on hand).");
     }
 
     public static void checkIssuerResponse(int transactionId, String responseCode, String responseText) throws HpsIssuerException {
@@ -52,7 +55,7 @@ public class HpsIssuerResponseValidation {
     }
 
     public static HpsIssuerException getException(int transactionId, String responseCode, String responseText) throws HpsIssuerException {
-        if (responseCode.equals("85") || responseCode.equals("00")) return null;
+        if (responseCode.equals("85") || responseCode.equals("10") || responseCode.equals("00") || responseCode.equals("0")) return null;
 
         HpsIssuerExceptionCodes code = issuerCodeToCreditExceptionCode.containsKey(responseCode) ? issuerCodeToCreditExceptionCode.get(responseCode) : null;
         if(code != null) {
