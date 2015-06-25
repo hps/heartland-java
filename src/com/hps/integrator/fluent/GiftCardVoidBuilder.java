@@ -1,49 +1,41 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
-import com.hps.integrator.entities.gift.HpsGiftCardVoid;
+import com.hps.integrator.entities.gift.HpsGiftCardResponse;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentGiftService;
 
-public class GiftCardVoidBuilder extends GatewayTransactionBuilder<GiftCardVoidBuilder, HpsGiftCardVoid> {
-    public GiftCardVoidBuilder(IHpsServicesConfig config, int transactionId) {
-        super(config);
+public class GiftCardVoidBuilder extends HpsBuilderAbstract<HpsFluentGiftService, HpsGiftCardResponse> {
+    Integer transactionId;
 
-        transaction = new PosRequestVer10Transaction();
-        PosGiftCardVoidReqType item = new PosGiftCardVoidReqType();
-        GiftCardVoidReqBlock1Type block1 = new GiftCardVoidReqBlock1Type();
-
-        block1.GatewayTxnId = transactionId;
-
-        item.Block1 = block1;
-        transaction.GiftCardVoid = item;
-    }
-
-    @Override
-    protected GiftCardVoidBuilder getBuilder() {
+    public GiftCardVoidBuilder withTransactionId(Integer value) {
+        this.transactionId = value;
         return this;
     }
 
+    public GiftCardVoidBuilder(HpsFluentGiftService service) {
+        super(service);
+    }
+
     @Override
-    public HpsGiftCardVoid execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+    public HpsGiftCardResponse execute() throws HpsException {
+        super.execute();
 
-        PosGiftCardVoidRspType voidRsp = resp.Ver10.Transaction.GiftCardVoid;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(voidRsp.RspCode), voidRsp.RspText);
+        Element transaction = Et.element("GiftCardVoid");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
 
-        HpsGiftCardVoid voidResult = new HpsGiftCardVoid(hydrateTransactionHeader(resp.Ver10.Header));
-        voidResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        voidResult.setAuthorizationCode(voidRsp.AuthCode);
-        voidResult.setBalanceAmount(voidRsp.BalanceAmt);
-        voidResult.setPointsBalanceAmount(voidRsp.PointsBalanceAmt);
-        voidResult.setNotes(voidRsp.Notes);
-        voidResult.setResponseCode(Integer.toString(voidRsp.RspCode));
-        voidResult.setResponseText(voidRsp.RspText);
+        ElementTree response = service.submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
+    }
 
-        return voidResult;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("transactionIDIsNotNull", "Transaction ID is required."));
+    }
+
+    private boolean transactionIDIsNotNull(){
+        return this.transactionId != null;
     }
 }

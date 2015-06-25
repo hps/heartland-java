@@ -1,52 +1,78 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.PosCreditAddToBatchReqType;
-import PosGateway.Exchange.Hps.PosRequestVer10Transaction;
-import PosGateway.Exchange.Hps.PosResponse;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.HpsDirectMarketData;
-import com.hps.integrator.entities.credit.HpsReportTransactionDetails;
+import com.hps.integrator.entities.HpsTransaction;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.services.HpsCreditService;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
 
-public class CreditCaptureBuilder extends GatewayTransactionBuilder<CreditCaptureBuilder, HpsReportTransactionDetails> {
-    public CreditCaptureBuilder(IHpsServicesConfig config, int transactionId) {
-        super(config);
+public class CreditCaptureBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsTransaction> {
+    Integer transactionId;
+    BigDecimal amount;
+    BigDecimal gratuity;
+    String clientTransactionId;
+    HpsDirectMarketData directMarketData;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCreditAddToBatchReqType item = new PosCreditAddToBatchReqType();
-        item.GatewayTxnId = transactionId;
-        transaction.CreditAddToBatch = item;
+    public CreditCaptureBuilder withTransactionId(Integer value) {
+        this.transactionId = value;
+        return this;
+    }
+
+    public CreditCaptureBuilder withAmount(BigDecimal value) {
+        this.amount = value;
+        return this;
+    }
+
+    public CreditCaptureBuilder withGratuity(BigDecimal value) {
+        this.gratuity = value;
+        return this;
+    }
+
+    public CreditCaptureBuilder withClientTransactionId(String value) {
+        this.clientTransactionId = value;
+        return this;
+    }
+
+    public CreditCaptureBuilder withDirectMarketData(HpsDirectMarketData value) {
+        this.directMarketData = value;
+        return this;
+    }
+
+    public CreditCaptureBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
-    protected CreditCaptureBuilder getBuilder() {
-        return this;
+    public HpsTransaction execute() throws HpsException {
+        super.execute();
+
+        Element transaction = Et.element("CreditAddToBatch");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
+        if(amount != null)
+            Et.subElement(transaction, "Amt").text(amount.toString());
+
+        if(gratuity != null)
+            Et.subElement(transaction, "GratuityAmtInfo").text(gratuity.toString());
+
+        if(directMarketData != null)
+            transaction.append(service.hydrateDirectMarketData(directMarketData));
+
+        ElementTree response = service.submitTransaction(transaction);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
     @Override
-    public HpsReportTransactionDetails execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        return new HpsCreditService(servicesConfig).get(resp.Ver10.Header.GatewayTxnId);
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("transactionIdIsNotNull", "TransactionID is required."));
     }
 
-    public CreditCaptureBuilder withAmount(BigDecimal amount) {
-        transaction.CreditAddToBatch.Amt = amount;
-        return this;
-    }
-
-    public CreditCaptureBuilder withGratuity(BigDecimal gratuity) {
-        transaction.CreditAddToBatch.GratuityAmtInfo = gratuity;
-        return this;
-    }
-
-    public CreditCaptureBuilder withDirectMarketData(HpsDirectMarketData directMarketData) {
-        transaction.CreditAddToBatch.DirectMktData = hydrateDirectMktData(directMarketData);
-        return this;
+    private boolean transactionIdIsNotNull(){
+        return this.transactionId != null;
     }
 }

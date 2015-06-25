@@ -54,7 +54,7 @@ public class HpsIssuerResponseValidation {
         if(e != null) { throw e; }
     }
 
-    public static HpsIssuerException getException(int transactionId, String responseCode, String responseText) throws HpsIssuerException {
+    public static HpsIssuerException getException(Integer transactionId, String responseCode, String responseText) {
         if (responseCode.equals("85") || responseCode.equals("10") || responseCode.equals("00") || responseCode.equals("0")) return null;
 
         HpsIssuerExceptionCodes code = issuerCodeToCreditExceptionCode.containsKey(responseCode) ? issuerCodeToCreditExceptionCode.get(responseCode) : null;

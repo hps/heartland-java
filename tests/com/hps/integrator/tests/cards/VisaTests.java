@@ -506,7 +506,7 @@ public class VisaTests {
     @Test
     public void Visa_VerifyWithToken_ShouldReturnOk() throws HpsException {
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        HpsAccountVerify response = service.verify(TestCreditCards.validVisa(), TestCardHolders.validCardHolder(), true);
+        HpsAccountVerify response = service.verify(TestCreditCards.validVisa(), TestCardHolders.validCardHolder(), true, false, false);
         response = service.verify(response.getTokenData().getTokenValue(), TestCardHolders.validCardHolder());
 
         assertEquals("85", response.getResponseCode());
@@ -526,7 +526,7 @@ public class VisaTests {
 	{
 		HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
 		HpsAuthorization response = service.authorize(new BigDecimal("50"), "usd", TestCreditCards.validVisa(),
-                TestCardHolders.validCardHolder(), true, true, null, null, false);
+                TestCardHolders.validCardHolder(), true, true, null, null, false, false, false);
 		assertEquals(0, response.getTokenData().getTokenRspCode());
 		assertEquals("00", response.getResponseCode());
 	}
@@ -549,7 +549,7 @@ public class VisaTests {
                 TestCardHolders.validCardHolder(), true);
 		assertEquals("00", auth.getResponseCode());
 		
-		HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID());
+		HpsTransaction capture = service.captureTxn(auth.getTransactionID());
 		assertEquals("00", capture.getResponseCode());		
 	}
 

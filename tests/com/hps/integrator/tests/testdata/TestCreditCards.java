@@ -1,8 +1,8 @@
 package com.hps.integrator.tests.testdata;
 
+import com.hps.integrator.entities.HpsEncryptionData;
 import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.credit.HpsCreditCard;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
 import com.hps.integrator.infrastructure.HpsTrackDataMethod;
 
 public class TestCreditCards {

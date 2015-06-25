@@ -1,62 +1,66 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.PosCreditTxnEditReqType;
-import PosGateway.Exchange.Hps.PosRequestVer10Transaction;
-import PosGateway.Exchange.Hps.PosResponse;
-import PosGateway.Exchange.Hps.PosResponseVer10Header;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
-import com.hps.integrator.entities.HpsDirectMarketData;
 import com.hps.integrator.entities.HpsTransaction;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
 
-public class CreditEditBuilder extends GatewayTransactionBuilder<CreditEditBuilder, HpsTransaction> {
-    public CreditEditBuilder(IHpsServicesConfig config) {
-        super(config);
+public class CreditEditBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsTransaction> {
+    Integer transactionId;
+    BigDecimal amount;
+    BigDecimal gratuity;
+    String clientTransactionId;
 
-        transaction = new PosRequestVer10Transaction();
-        transaction.CreditTxnEdit = new PosCreditTxnEditReqType();
+    public CreditEditBuilder withTransactionId(Integer value) {
+        this.transactionId = value;
+        return this;
+    }
+    public CreditEditBuilder withAmount(BigDecimal value) {
+        this.amount = value;
+        return this;
+    }
+    public CreditEditBuilder withGratuity(BigDecimal value) {
+        this.gratuity = value;
+        return this;
+    }
+    public CreditEditBuilder withClientTransactionId(String value) {
+        this.clientTransactionId = value;
+        return this;
     }
 
-    @Override
-    protected CreditEditBuilder getBuilder() {
-        return this;
+    public CreditEditBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsTransaction execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosResponseVer10Header header = resp.Ver10.Header;
+        Element transaction = Et.element("CreditTxnEdit");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
+        if(amount != null)
+            Et.subElement(transaction, "Amt").text(amount.toString());
 
-        HpsTransaction result = new HpsTransaction(hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
+        if(gratuity != null)
+            Et.subElement(transaction, "GratuityAmtInfo").text(gratuity.toString());
 
-        return result;
+        ElementTree response = service.submitTransaction(transaction, clientTransactionId);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+
+        return trans;
     }
 
-    public CreditEditBuilder withGratuity(BigDecimal gratuity) {
-        transaction.CreditTxnEdit.GratuityAmtInfo = gratuity;
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("transactionIdIsNotNull", "TransactionId is required."));
     }
 
-    public CreditEditBuilder withAmount(BigDecimal amount) {
-        transaction.CreditTxnEdit.Amt = amount;
-        return this;
-    }
-
-    public CreditEditBuilder withDirectMarketData(HpsDirectMarketData directMarketData) {
-        transaction.CreditTxnEdit.DirectMktData = hydrateDirectMktData(directMarketData);
-        return this;
-    }
-
-    public CreditEditBuilder withSurchargeAmount(BigDecimal amount) {
-        transaction.CreditTxnEdit.SurchargeAmtInfo = amount;
-        return this;
+    private boolean transactionIdIsNotNull(){
+        return this.transactionId != null;
     }
 }

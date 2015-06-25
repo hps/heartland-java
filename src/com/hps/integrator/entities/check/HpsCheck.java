@@ -1,16 +1,18 @@
 package com.hps.integrator.entities.check;
 
-import PosGateway.Exchange.Hps.Enums;
+import com.hps.integrator.infrastructure.emums.AccountTypeType;
+import com.hps.integrator.infrastructure.emums.CheckTypeType;
+import com.hps.integrator.infrastructure.emums.DataEntryModeType;
 
 public class HpsCheck {
     private String routingNumber;
     private String accountNumber;
     private String checkNumber;
     private String micrNumber;
-    private Enums.accountTypeType accountType;
-    private Enums.dataEntryModeType dataEntryMode;
-    private Enums.checkTypeType checkType;
-    private boolean checkVerify;
+    private AccountTypeType accountType;
+    private DataEntryModeType dataEntryMode;
+    private CheckTypeType checkType;
+    private Boolean checkVerify;
     private String secCode;
     private HpsCheckHolder checkHolder;
 
@@ -47,11 +49,11 @@ public class HpsCheck {
         this.micrNumber = micrNumber;
     }
 
-    public boolean getCheckVerify() {
+    public Boolean getCheckVerify() {
         return checkVerify;
     }
 
-    public void setCheckVerify(boolean checkVerify) {
+    public void setCheckVerify(Boolean checkVerify) {
         this.checkVerify = checkVerify;
     }
 
@@ -71,27 +73,27 @@ public class HpsCheck {
         this.checkHolder = checkHolder;
     }
 
-    public Enums.accountTypeType getAccountType() {
+    public AccountTypeType getAccountType() {
         return accountType;
     }
 
-    public void setAccountType(Enums.accountTypeType accountType) {
+    public void setAccountType(AccountTypeType accountType) {
         this.accountType = accountType;
     }
 
-    public Enums.dataEntryModeType getDataEntryMode() {
+    public DataEntryModeType getDataEntryMode() {
         return dataEntryMode;
     }
 
-    public void setDataEntryMode(Enums.dataEntryModeType dataEntryMode) {
+    public void setDataEntryMode(DataEntryModeType dataEntryMode) {
         this.dataEntryMode = dataEntryMode;
     }
 
-    public Enums.checkTypeType getCheckType() {
+    public CheckTypeType getCheckType() {
         return checkType;
     }
 
-    public void setCheckType(Enums.checkTypeType checkType) {
+    public void setCheckType(CheckTypeType checkType) {
         this.checkType = checkType;
     }
 }

@@ -52,15 +52,15 @@ public class HpsToken {
 		
 		private String number;
 		private String cvc;
-		private int exp_month;
-		private int exp_year;
+		private Integer exp_month;
+		private Integer exp_year;
 		
 		public Card()
 		{
 			
 		}
 		
-		public Card(String number, String cvc, int expMonth, int expYear)
+		public Card(String number, String cvc, Integer expMonth, Integer expYear)
 		{
 			this.number = number;
 			this.cvc = cvc;

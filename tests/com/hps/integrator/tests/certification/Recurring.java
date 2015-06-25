@@ -6,6 +6,8 @@ import com.hps.integrator.entities.credit.HpsAuthorization;
 import com.hps.integrator.entities.payplan.*;
 import com.hps.integrator.infrastructure.*;
 import com.hps.integrator.services.*;
+import com.hps.integrator.services.fluent.HpsFluentCheckService;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -23,8 +25,8 @@ import static org.junit.Assert.fail;
 public class Recurring {
     private HpsPayPlanService service;
     private HpsBatchService batchService;
-    private HpsCreditService creditService;
-    private HpsCheckService checkService;
+    private HpsFluentCreditService creditService;
+    private HpsFluentCheckService checkService;
 
     private static String customerPersonKey;
     private static String customerCompanyKey;
@@ -46,8 +48,8 @@ public class Recurring {
 
         this.service = new HpsPayPlanService(config);
         this.batchService = new HpsBatchService(config);
-        this.creditService = new HpsCreditService(config);
-        this.checkService = new HpsCheckService(config);
+        this.creditService = new HpsFluentCreditService(config, true);
+        this.checkService = new HpsFluentCheckService(config, true);
     }
 
     private String getIdentifier(String identifier){
@@ -66,30 +68,31 @@ public class Recurring {
             System.out.println(String.format("Sequence Number: %s", response.getSequenceNumber()));
         }
         catch(HpsException exc){
-            fail(exc.getMessage());
+            if (!exc.getMessage().equals("Transaction was rejected because it requires a batch to be open."))
+                fail(exc.getMessage());
         }
     }
 
-    @Test
-    public void test_000_CleanUp() throws HpsException {
-        // Remove Schedules
-        HpsPayPlanScheduleCollection schResults = this.service.findAllSchedules();
-        for(HpsPayPlanSchedule schedule : schResults.getResults()) {
-            this.service.deleteSchedule(schedule, true);
-        }
-
-        // Remove Payment Methods
-        HpsPayPlanPaymentMethodCollection pmResults = this.service.findAllPaymentMethods();
-        for(HpsPayPlanPaymentMethod pm : pmResults.getResults()) {
-            this.service.deletePaymentMethod(pm, true);
-        }
-
-        // Remove Customers
-        HpsPayPlanCustomerCollection custResults = this.service.findAllCustomers();
-        for(HpsPayPlanCustomer c : custResults.getResults()){
-            this.service.deleteCustomer(c, true);
-        }
-    }
+//    @Test
+//    public void test_000_CleanUp() throws HpsException {
+//        // Remove Schedules
+//        HpsPayPlanScheduleCollection schResults = this.service.findAllSchedules();
+//        for(HpsPayPlanSchedule schedule : schResults.getResults()) {
+//            this.service.deleteSchedule(schedule, true);
+//        }
+//
+//        // Remove Payment Methods
+//        HpsPayPlanPaymentMethodCollection pmResults = this.service.findAllPaymentMethods();
+//        for(HpsPayPlanPaymentMethod pm : pmResults.getResults()) {
+//            this.service.deletePaymentMethod(pm, true);
+//        }
+//
+//        // Remove Customers
+//        HpsPayPlanCustomerCollection custResults = this.service.findAllCustomers();
+//        for(HpsPayPlanCustomer c : custResults.getResults()){
+//            this.service.deleteCustomer(c, true);
+//        }
+//    }
 
     // CUSTOMER SETUP
 
@@ -370,8 +373,8 @@ public class Recurring {
     // Recurring Billing using PayPlan - Managed Schedule
 
     @Test
-    public void test_014_RecurringBillingVisa() throws HpsException, HpsCheckException {
-        HpsAuthorization response = this.creditService.recurring(new BigDecimal("20.01"), scheduleKeyVisa)
+    public void test_014_RecurringBillingVisa() throws HpsException {
+        HpsAuthorization response = this.creditService.recurring(new BigDecimal("20.01")).withScheduleId(scheduleKeyVisa)
                 .withPaymentMethodKey(paymentMethodKeyVisa)
                 .execute();
         assertNotNull(response);
@@ -379,8 +382,8 @@ public class Recurring {
     }
 
     @Test
-    public void test_015_RecurringBillingMasterCard() throws HpsException, HpsCheckException {
-        HpsAuthorization response = this.creditService.recurring(new BigDecimal("20.02"), scheduleKeyMasterCard)
+    public void test_015_RecurringBillingMasterCard() throws HpsException {
+        HpsAuthorization response = this.creditService.recurring(new BigDecimal("20.02")).withScheduleId(scheduleKeyMasterCard)
                 .withPaymentMethodKey(paymentMethodKeyMasterCard)
                 .execute();
         assertNotNull(response);
@@ -388,7 +391,7 @@ public class Recurring {
     }
 
     @Test
-    public void test_016_RecurringBillingCheckPPD() throws HpsException, HpsCheckException {
+    public void test_016_RecurringBillingCheckPPD() throws HpsException {
         HpsCheckResponse response = this.checkService.recurring(new BigDecimal("20.03"))
                 .withSchedule(scheduleKeyCheckPPD)
                 .withPaymentMethodKey(paymentMethodKeyCheckPPD)
@@ -398,7 +401,7 @@ public class Recurring {
     }
 
     @Test
-    public void test_017_RecurringBillingCheckCCD() throws HpsException, HpsCheckException {
+    public void test_017_RecurringBillingCheckCCD() throws HpsException {
         HpsCheckResponse response = this.checkService.recurring(new BigDecimal("20.04"))
                 .withSchedule(scheduleKeyCheckCCD)
                 .withPaymentMethodKey(paymentMethodKeyCheckCCD)
@@ -410,40 +413,40 @@ public class Recurring {
     // One time bill payment
 
     @Test
-    public void test_018_RecurringBillingVisa() throws HpsException, HpsCheckException {
+    public void test_018_RecurringBillingVisa() throws HpsException {
         HpsAuthorization response = this.creditService.recurring(new BigDecimal("20.06"))
                 .withPaymentMethodKey(paymentMethodKeyVisa)
-                .oneTime()
+                .withOneTime(true)
                 .execute();
         assertNotNull(response);
         assertEquals("00", response.getResponseCode());
     }
 
     @Test
-    public void test_019_RecurringBillingMasterCard() throws HpsException, HpsCheckException {
+    public void test_019_RecurringBillingMasterCard() throws HpsException {
         HpsAuthorization response = this.creditService.recurring(new BigDecimal("20.07"))
                 .withPaymentMethodKey(paymentMethodKeyMasterCard)
-                .oneTime()
+                .withOneTime(true)
                 .execute();
         assertNotNull(response);
         assertEquals("00", response.getResponseCode());
     }
 
     @Test
-    public void test_020_RecurringBillingCheckPPD() throws HpsException, HpsCheckException {
+    public void test_020_RecurringBillingCheckPPD() throws HpsException {
         HpsCheckResponse response = this.checkService.recurring(new BigDecimal("20.08"))
                 .withPaymentMethodKey(paymentMethodKeyCheckPPD)
-                .oneTime()
+                .withOneTime(true)
                 .execute();
         assertNotNull(response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
-    public void test_021_RecurringBillingCheckCCD() throws HpsException, HpsCheckException {
+    public void test_021_RecurringBillingCheckCCD() throws HpsException {
         HpsCheckResponse response = this.checkService.recurring(new BigDecimal("20.09"))
                 .withPaymentMethodKey(paymentMethodKeyCheckCCD)
-                .oneTime()
+                .withOneTime(true)
                 .execute();
         assertNotNull(response);
         assertEquals("0", response.getResponseCode());
@@ -452,18 +455,18 @@ public class Recurring {
     // Onetime bill payment - declined
 
     @Test(expected = HpsException.class)
-    public void test_022_RecurringBillingVisa() throws HpsException, HpsCheckException {
+    public void test_022_RecurringBillingVisa() throws HpsException {
         this.creditService.recurring(new BigDecimal("10.08"))
                 .withPaymentMethodKey(paymentMethodKeyVisa)
-                .oneTime()
+                .withOneTime(true)
                 .execute();
     }
 
     @Test(expected = HpsCheckException.class)
-    public void test_023_RecurringBillingCheckPPD() throws HpsException, HpsCheckException {
+    public void test_023_RecurringBillingCheckPPD() throws HpsException {
         this.checkService.recurring(new BigDecimal("25.02"))
                 .withPaymentMethodKey(paymentMethodKeyCheckPPD)
-                .oneTime()
+                .withOneTime(true)
                 .execute();
     }
 

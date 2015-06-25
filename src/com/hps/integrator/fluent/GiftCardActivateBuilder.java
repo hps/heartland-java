@@ -1,59 +1,65 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.gift.HpsGiftCard;
-import com.hps.integrator.entities.gift.HpsGiftCardActivate;
+import com.hps.integrator.entities.gift.HpsGiftCardResponse;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.infrastructure.validation.HpsInputValidation;
+import com.hps.integrator.services.fluent.HpsFluentGiftService;
 
 import java.math.BigDecimal;
 
-public class GiftCardActivateBuilder extends GatewayTransactionBuilder<GiftCardActivateBuilder, HpsGiftCardActivate> {
-    public GiftCardActivateBuilder(IHpsServicesConfig config, BigDecimal amount, HpsGiftCard giftCard) {
-        super(config);
+public class GiftCardActivateBuilder extends HpsBuilderAbstract<HpsFluentGiftService, HpsGiftCardResponse> {
+    BigDecimal amount;
+    HpsGiftCard card;
+    String currency;
 
-        transaction = new PosRequestVer10Transaction();
-        PosGiftCardActivateReqType item = new PosGiftCardActivateReqType();
-        GiftCardActivateReqBlock1Type block1 = new GiftCardActivateReqBlock1Type();
-
-        block1.Amt = amount;
-        block1.CardData = hydrateGiftCardData(giftCard);
-
-        item.Block1 = block1;
-        transaction.GiftCardActivate = item;
+    public GiftCardActivateBuilder withAmount(BigDecimal value) {
+        this.amount = value;
+        return this;
     }
-
-    @Override
-    protected GiftCardActivateBuilder getBuilder() {
+    public GiftCardActivateBuilder withCard(HpsGiftCard value) {
+        this.card = value;
+        return this;
+    }
+    public GiftCardActivateBuilder withCurrency(String value) {
+        this.currency = value;
         return this;
     }
 
+    public GiftCardActivateBuilder(HpsFluentGiftService service) {
+        super(service);
+    }
+
     @Override
-    public HpsGiftCardActivate execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+    public HpsGiftCardResponse execute() throws HpsException {
+        super.execute();
 
-        PosGiftCardActivateRspType activationRsp = resp.Ver10.Transaction.GiftCardActivate;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(activationRsp.RspCode), activationRsp.RspText);
+        HpsInputValidation.checkAmount(amount);
+        HpsInputValidation.checkCurrency(currency);
 
-        HpsGiftCardActivate activation = new HpsGiftCardActivate(hydrateTransactionHeader(resp.Ver10.Header));
-        activation.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        activation.setAuthorizationCode(activationRsp.AuthCode);
-        activation.setBalanceAmount(activationRsp.BalanceAmt);
-        activation.setPointsBalanceAmount(activationRsp.PointsBalanceAmt);
-        activation.setRewards(activationRsp.Rewards);
-        activation.setNotes(activationRsp.Notes);
-        activation.setResponseCode(Integer.toString(activationRsp.RspCode));
-        activation.setResponseText(activationRsp.RspText);
+        Element transaction = Et.element("GiftCardActivate");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        block1.append(service.hydrateGiftCardData(card));
 
-        return activation;
+        ElementTree response = service.submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
-    public GiftCardActivateBuilder withCurrency(Enums.currencyType currency) {
-        transaction.GiftCardActivate.Block1.Currency = currency;
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("amountIsNotNull", "Amount is required."));
+        this.addValidation(new HpsBuilderValidation("cardIsNotNull", "Card is required."));
+        this.addValidation(new HpsBuilderValidation("currencyIsNotNull", "Currency is required."));
     }
+
+    private boolean amountIsNotNull(){
+        return this.amount != null;
+    }
+
+    private boolean cardIsNotNull() { return this.card != null; }
+
+    private boolean currencyIsNotNull() { return this.currency != null; }
 }

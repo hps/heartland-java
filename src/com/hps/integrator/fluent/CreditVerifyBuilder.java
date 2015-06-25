@@ -1,88 +1,104 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
-import com.hps.integrator.entities.HpsTokenData;
-import com.hps.integrator.entities.credit.HpsAccountVerify;
-import com.hps.integrator.entities.credit.HpsCardHolder;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
+import com.hps.integrator.applepay.ecv1.PaymentData;
+import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsTrackData;
+import com.hps.integrator.entities.HpsTransactionDetails;
+import com.hps.integrator.entities.credit.*;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
 
-public class CreditVerifyBuilder extends GatewayTransactionBuilder<CreditVerifyBuilder, HpsAccountVerify> {
-    public CreditVerifyBuilder(IHpsServicesConfig config) {
-        super(config);
+public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsAccountVerify> {
+    private HpsCreditCard card;
+    private String token;
+    private HpsTrackData trackData;
+    private HpsCardHolder cardHolder;
+    private boolean requestMultiUseToken = false;
+    private boolean cardPresent = false;
+    private boolean readerPresent = false;
+    private String clientTransactionId;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCreditAccountVerifyReqType item = new PosCreditAccountVerifyReqType();
-        CreditAccountVerifyBlock1Type block1 = new CreditAccountVerifyBlock1Type();
-
-        block1.CardData = new CardDataType();
-
-        item.Block1 = block1;
-        transaction.CreditAccountVerify = item;
+    public CreditVerifyBuilder withCard(HpsCreditCard card){
+        this.card = card;
+        return this;
+    }
+    public CreditVerifyBuilder withToken(String token){
+        this.token = token;
+        return this;
+    }
+    public CreditVerifyBuilder withTrackData(HpsTrackData trackData){
+        this.trackData = trackData;
+        return this;
+    }
+    public CreditVerifyBuilder withCardHolder(HpsCardHolder cardHolder){
+        this.cardHolder = cardHolder;
+        return this;
+    }
+    public CreditVerifyBuilder withRequestMultiUseToken(boolean requestMultiUseToken){
+        this.requestMultiUseToken = requestMultiUseToken;
+        return this;
+    }
+    public CreditVerifyBuilder withCardPresent(boolean cardPresent){
+        this.cardPresent = cardPresent;
+        return this;
+    }
+    public CreditVerifyBuilder withReaderPresent(boolean readerPresent){
+        this.readerPresent = readerPresent;
+        return this;
+    }
+    public CreditVerifyBuilder withClientTransactionId(String clientTransactionId) {
+        this.clientTransactionId = clientTransactionId;
+        return this;
     }
 
-    @Override
-    protected CreditVerifyBuilder getBuilder() {
-        return this;
+    public CreditVerifyBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsAccountVerify execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        AuthRspStatusType creditVerifyRsp = resp.Ver10.Transaction.CreditAccountVerify;
-        HpsAccountVerify accountVerify = new HpsAccountVerify(hydrateTransactionHeader(resp.Ver10.Header));
+        Element transaction = Et.element("CreditAccountVerify");
+        Element block1 = Et.subElement(transaction, "Block1");
 
-        accountVerify.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        accountVerify.setAvsResultCode(creditVerifyRsp.AVSRsltCode);
-        accountVerify.setAvsResultText(creditVerifyRsp.AVSRsltText);
-        accountVerify.setReferenceNumber(creditVerifyRsp.RefNbr);
-        accountVerify.setResponseCode(creditVerifyRsp.RspCode);
-        accountVerify.setResponseText(creditVerifyRsp.RspText);
-        accountVerify.setCardType(creditVerifyRsp.CardType);
-        accountVerify.setCpcIndicator(creditVerifyRsp.CPCInd);
-        accountVerify.setCvvResultCode(creditVerifyRsp.CVVRsltCode);
-        accountVerify.setCvvResultText(creditVerifyRsp.CVVRsltText);
-        accountVerify.setAuthorizationCode(creditVerifyRsp.AuthCode);
-        accountVerify.setAuthorizedAmount(creditVerifyRsp.AuthAmt);
+        if(cardHolder != null)
+            block1.append(service.hydrateCardHolder(cardHolder));
 
-        if(resp.Ver10.Header.TokenData != null) {
-            HpsTokenData tokenData = new HpsTokenData();
-            tokenData.setTokenRspCode(resp.Ver10.Header.TokenData.TokenRspCode);
-            tokenData.setTokenRspMsg(resp.Ver10.Header.TokenData.TokenRspMsg);
-            tokenData.setTokenValue(resp.Ver10.Header.TokenData.TokenValue);
-            accountVerify.setTokenData(tokenData);
+        Element cardData = Et.subElement(block1, "CardData");
+        if(card != null) {
+            cardData.append(service.hydrateCardManualEntry(card, cardPresent, readerPresent));
+            if(card.getEncryptionData() != null)
+                cardData.append(service.hydrateEncryptionData(card.getEncryptionData()));
         }
+        else if(token != null)
+            cardData.append(service.hydrateTokenData(token, cardPresent, readerPresent));
+        else if(trackData != null) {
+            cardData.append(service.hydrateTrackData(trackData));
+            if(trackData.getEncryptionData() != null)
+                cardData.append(service.hydrateEncryptionData(trackData.getEncryptionData()));
+        }
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
 
-        HpsIssuerResponseValidation.checkIssuerResponse(accountVerify.getTransactionID(),
-                accountVerify.getResponseCode(), accountVerify.getResponseText());
-
-        return accountVerify;
+        ElementTree response = service.submitTransaction(transaction, clientTransactionId);
+        return new HpsAccountVerify().fromElementTree(response);
     }
 
-    public CreditVerifyBuilder withCardHolder(HpsCardHolder cardHolder) {
-        transaction.CreditAccountVerify.Block1.CardHolderData = hydrateCardHolderData(cardHolder);
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("onlyOnePaymentMethod", "Only one payment method is required."));
     }
 
-    public CreditVerifyBuilder withRequestMultiuseToken(boolean requestMultiUseToken) {
-        transaction.CreditAccountVerify.Block1.CardData.TokenRequest = requestMultiUseToken ? Enums.booleanType.Y : Enums.booleanType.N;
-        return this;
-    }
+    private boolean onlyOnePaymentMethod(){
+        int count = 0;
+        if(card != null) count++;
+        if(trackData != null) count++;
+        if(token != null) count++;
 
-    public CreditVerifyBuilder withEncryptionData(HpsEncryptionData encryptionData) {
-        transaction.CreditAccountVerify.Block1.CardData.EncryptionData = hydrateEncryptionData(encryptionData);
-        return this;
-    }
-
-    public CreditVerifyBuilder withAuthorizedAmount(BigDecimal authorizedAmount) {
-        transaction.CreditReversal.Block1.AuthAmt = authorizedAmount;
-        return this;
+        return count == 1;
     }
 }

@@ -58,6 +58,8 @@ public class ElementTree {
             return writer.toString();
         } catch (TransformerException e) {
             return e.getMessage();
+        } finally {
+            doc.removeChild(root.getElement());
         }
     }
 

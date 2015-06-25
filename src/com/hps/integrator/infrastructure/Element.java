@@ -17,6 +17,10 @@ public class Element {
         this.element = element;
     }
 
+    public Element firstChild() {
+        return Element.fromNode(doc, this.element.getFirstChild());
+    }
+
     public Element set(String name, String value){
         this.element.setAttribute(name, value);
         return this;
@@ -28,8 +32,13 @@ public class Element {
     }
 
     public Element append(Element child) {
+        this.doc.adoptNode(child.getElement());
         this.element.appendChild(child.getElement());
-        return this;
+        return this;/**/
+    }
+
+    public String tag() {
+        return this.element.getTagName();
     }
 
     public org.w3c.dom.Element getElement() { return this.element; }
@@ -63,18 +72,11 @@ public class Element {
         } return null;
     }
 
-    public int getInt(String tagName) {
+    public Integer getInt(String tagName) {
         org.w3c.dom.Element element = (org.w3c.dom.Element)this.element.getElementsByTagName(tagName).item(0);
         if(element != null) {
             return Integer.parseInt(element.getTextContent());
-        } return -1;
-    }
-
-    public long getLong(String tagName) {
-        org.w3c.dom.Element element = (org.w3c.dom.Element)this.element.getElementsByTagName(tagName).item(0);
-        if(element != null) {
-            return Long.parseLong(element.getTextContent());
-        } return -1;
+        } return null;
     }
 
     public Date getDate(String tagName) {

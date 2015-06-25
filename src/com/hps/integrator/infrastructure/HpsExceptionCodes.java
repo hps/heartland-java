@@ -6,5 +6,17 @@ public enum HpsExceptionCodes {
     InvalidAmount,
     MissingCurrency,
     InvalidCurrency,
-    InvalidDate
+    InvalidDate,
+    MissingCheckName,
+    IssuerTimeoutReversal,
+
+    GatewayTimeoutReversalError,
+    UnknownGatewayError,
+    InvalidOriginalTransaction,
+    NoOpenBatch,
+    InvalidCpcData,
+    InvalidCardData,
+    InvalidNumber,
+    GatewayTimeout,
+    UnexpectedGatewayResponse
 }

@@ -83,8 +83,11 @@ public class PaymentData
 
             JsonObject paymentData = jobject.getAsJsonObject("paymentData");
             String cryptogram = paymentData.get("onlinePaymentCryptogram").getAsString();
+            String eciIndicator = "";
+            if(paymentData.has("eciIndicator"))
+                eciIndicator = paymentData.get("eciIndicator").getAsString();
 
-            this.mPaymentData = new PaymentData3DS(cryptogram);
+            this.mPaymentData = new PaymentData3DS(cryptogram, eciIndicator);
             this.mTransactionAmount = jobject.get("transactionAmount").getAsString();
         }
         catch(Exception e)

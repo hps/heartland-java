@@ -25,17 +25,18 @@ public class HpsTokenService {
 
         String[] components = mPublicKey.split("_");
 
-        if (components.length != 3) {
+        if (components.length < 3) {
             throw new IllegalArgumentException("publicKey format invalid");
         }
 
         String env = components[1].toLowerCase();
 
         if (env.equals("prod")) {
-            mUrl = "https://api.heartlandportico.com/SecureSubmit.v1/api/token";
+            mUrl = "https://api2.heartlandportico.com/SecureSubmit.v1/api/token";
         } else {
-            mUrl = "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway.Hpf.v1/api/token";
+            mUrl = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway.Hpf.v1/api/token";
         }
+        System.setProperty("https.protocols", "TLSv1.1,TLSv1.2");
     }
 
     public HpsToken getToken(HpsCreditCard card) throws IOException {

@@ -8,6 +8,7 @@ public class HpsTransactionDetails {
     private String memo;
     private String invoiceNumber;
     private String customerId;
+    private String clientTransactionId;
 
     /**
      * Constructor
@@ -32,5 +33,13 @@ public class HpsTransactionDetails {
 
     public String getCustomerId() {
         return customerId;
+    }
+
+    public String getClientTransactionId() {
+        return clientTransactionId;
+    }
+
+    public void setClientTransactionId(String clientTransactionId) {
+        this.clientTransactionId = clientTransactionId;
     }
 }

@@ -1,9 +1,8 @@
 package com.hps.integrator.tests.applepay;
 
-import com.hps.integrator.applepay.ecv1.DecryptService;
+import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.credit.HpsAuthorization;
 import com.hps.integrator.entities.credit.HpsCharge;
-import com.hps.integrator.entities.credit.HpsReportTransactionDetails;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.services.HpsCreditService;
 import com.hps.integrator.tests.testdata.TestCardHolders;
@@ -20,7 +19,7 @@ public class FullCycleTests {
 
     public FullCycleTests() throws HpsException {
 //        this.decryptService = new DecryptService(TestData.PRIVATE_KEY_FILE_PATH, TestData.PRIVATE_KEY_PASSWORD);
-        this.creditService = new HpsCreditService(TestServicesConfig.validServicesConfig());
+        this.creditService = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
     }
 
     @Test
@@ -37,7 +36,7 @@ public class FullCycleTests {
         assertNotNull(response);
         assertEquals(response.getResponseCode(), "00");
 
-        HpsReportTransactionDetails captureResponse = creditService.captureTxn(response.getTransactionID());
+        HpsTransaction captureResponse = creditService.captureTxn(response.getTransactionID());
         assertNotNull(captureResponse);
     }
 
@@ -54,7 +53,7 @@ public class FullCycleTests {
         assertNotNull(response);
         assertEquals(response.getResponseCode(), "00");
 
-        HpsReportTransactionDetails captureResponse = creditService.captureTxn(response.getTransactionID());
+        HpsTransaction captureResponse = creditService.captureTxn(response.getTransactionID());
         assertNotNull(captureResponse);
     }
 }

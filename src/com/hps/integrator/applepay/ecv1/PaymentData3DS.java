@@ -6,11 +6,14 @@ public class PaymentData3DS
     private String mOnlinePaymentCryptogram;
 
     private String mPaymentDataType = "3DSecure";
+
+    private String mEciIndicator = "";
     // </editor-fold>
 
-    public PaymentData3DS(String onlinePaymentCryptogram)
+    public PaymentData3DS(String onlinePaymentCryptogram, String eciIndicator)
     {
         mOnlinePaymentCryptogram = onlinePaymentCryptogram;
+        mEciIndicator = eciIndicator;
     }
 
     public String getOnlinePaymentCryptogram()
@@ -21,5 +24,9 @@ public class PaymentData3DS
     public String getPaymentDataTye()
     {
         return mPaymentDataType;
+    }
+
+    public String getEciIndicator() {
+        return mEciIndicator;
     }
 }

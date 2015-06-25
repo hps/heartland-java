@@ -10,7 +10,7 @@ public class HpsTransactionHeader
 	private int gateWayRespCode;
 	private String gatewayRspMsg;
 	private Date rspDt;
-	private long clientTxnId;
+	private String clientTxnId;
 	
 	/**
 	 * Constructor
@@ -19,7 +19,7 @@ public class HpsTransactionHeader
 	 * @param responseDt RSP DateTime
 	 * @param transactionId client TXN ID
 	 */
-	public HpsTransactionHeader(int responseCode, String responseMessage, Date responseDt, long transactionId)
+	public HpsTransactionHeader(int responseCode, String responseMessage, Date responseDt, String transactionId)
 	{
 		gateWayRespCode = responseCode;
 		gatewayRspMsg = responseMessage;
@@ -39,7 +39,7 @@ public class HpsTransactionHeader
 		return rspDt;
 	}
 
-	public long getClientTxnId() {
+	public String getClientTxnId() {
 		return clientTxnId;
 	}
 }

@@ -1,51 +1,48 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.gift.HpsGiftCard;
-import com.hps.integrator.entities.gift.HpsGiftCardReplace;
-import com.hps.integrator.infrastructure.HpsCheckException;
+import com.hps.integrator.entities.gift.HpsGiftCardResponse;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentGiftService;
 
-public class GiftCardReplaceBuilder extends GatewayTransactionBuilder<GiftCardReplaceBuilder, HpsGiftCardReplace> {
-    public GiftCardReplaceBuilder(IHpsServicesConfig config, HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) {
-        super(config);
+public class GiftCardReplaceBuilder extends HpsBuilderAbstract<HpsFluentGiftService, HpsGiftCardResponse> {
+    HpsGiftCard oldCard;
+    HpsGiftCard newCard;
 
-        transaction = new PosRequestVer10Transaction();
-        PosGiftCardReplaceReqType item = new PosGiftCardReplaceReqType();
-        GiftCardReplaceReqBlock1Type block1 = new GiftCardReplaceReqBlock1Type();
-
-        block1.OldCardData = hydrateGiftCardData(oldGiftCard);
-        block1.NewCardData = hydrateGiftCardData(newGiftCard);
-
-        item.Block1 = block1;
-        transaction.GiftCardReplace = item;
+    public GiftCardReplaceBuilder withNewCard(HpsGiftCard value) {
+        this.newCard = value;
+        return this;
     }
-
-    @Override
-    protected GiftCardReplaceBuilder getBuilder() {
+    public GiftCardReplaceBuilder withOldCard(HpsGiftCard value) {
+        this.oldCard = value;
         return this;
     }
 
-    @Override
-    public HpsGiftCardReplace execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardReplaceRspType replaceRsp = resp.Ver10.Transaction.GiftCardReplace;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(replaceRsp.RspCode), replaceRsp.RspText);
-
-        HpsGiftCardReplace replaceResult = new HpsGiftCardReplace(hydrateTransactionHeader(resp.Ver10.Header));
-        replaceResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        replaceResult.setAuthorizationCode(replaceRsp.AuthCode);
-        replaceResult.setBalanceAmount(replaceRsp.BalanceAmt);
-        replaceResult.setPointsBalanceAmount(replaceRsp.PointsBalanceAmt);
-        replaceResult.setResponseCode(Integer.toString(replaceRsp.RspCode));
-        replaceResult.setResponseText(replaceRsp.RspText);
-
-        return replaceResult;
+    public GiftCardReplaceBuilder(HpsFluentGiftService service) {
+        super(service);
     }
+
+    @Override
+    public HpsGiftCardResponse execute() throws HpsException {
+        super.execute();
+
+        Element transaction = Et.element("GiftCardReplace");
+        Element block1 = Et.subElement(transaction, "Block1");
+        block1.append(service.hydrateGiftCardData(oldCard, "OldCardData"));
+        block1.append(service.hydrateGiftCardData(newCard, "NewCardData"));
+
+        ElementTree response = service.submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
+    }
+
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("oldCardIsNotNull", "OldCard is required."));
+        this.addValidation(new HpsBuilderValidation("newCardIsNotNull", "NewCard is required."));
+    }
+
+    private boolean oldCardIsNotNull() { return this.oldCard != null; }
+    private boolean newCardIsNotNull() { return this.newCard != null; }
 }

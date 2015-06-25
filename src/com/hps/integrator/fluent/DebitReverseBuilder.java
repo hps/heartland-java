@@ -1,61 +1,90 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
-import com.hps.integrator.entities.HpsTransaction;
+import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransactionDetails;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
+import com.hps.integrator.entities.debit.HpsDebitAuthorization;
+import com.hps.integrator.infrastructure.Element;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
+import com.hps.integrator.infrastructure.validation.HpsInputValidation;
+import com.hps.integrator.services.fluent.HpsFluentDebitService;
 
 import java.math.BigDecimal;
 
-public class DebitReverseBuilder extends GatewayTransactionBuilder<DebitReverseBuilder, HpsTransaction> {
-    public DebitReverseBuilder(IHpsServicesConfig config, BigDecimal amount) {
-        super(config);
+public class DebitReverseBuilder extends HpsBuilderAbstract<HpsFluentDebitService, HpsDebitAuthorization> {
+    BigDecimal amount;
+    BigDecimal authorizedAmount;
+    HpsTransactionDetails details;
+    HpsTrackData trackData;
+    Integer transactionId;
 
-        transaction = new PosRequestVer10Transaction();
-        PosDebitReversalReqType item = new PosDebitReversalReqType();
-        DebitReversalReqBlock1Type block1 = new DebitReversalReqBlock1Type();
+    public DebitReverseBuilder withAmount(BigDecimal value) {
+        this.amount = value;
+        return this;
+    }
+    public DebitReverseBuilder withAuthorizedAmount(BigDecimal value) {
+        this.authorizedAmount = value;
+        return this;
+    }
+    public DebitReverseBuilder withDetails(HpsTransactionDetails value) {
+        this.details = value;
+        return this;
+    }
+    public DebitReverseBuilder withTrackData(HpsTrackData value) {
+        this.trackData = value;
+        return this;
+    }
+    public DebitReverseBuilder withTransactionId(Integer value) {
+        this.transactionId = value;
+        return this;
+    }
 
-        block1.Amt = amount;
-
-        item.Block1 = block1;
-        transaction.DebitReversal = item;
+    public DebitReverseBuilder(HpsFluentDebitService service) {
+        super(service);
     }
 
     @Override
-    protected DebitReverseBuilder getBuilder() {
-        return this;
+    public HpsDebitAuthorization execute() throws HpsException {
+        super.execute();
+
+        HpsInputValidation.checkAmount(amount);
+
+        Element transaction = Et.element("DebitReversal");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+
+        if(authorizedAmount != null)
+            Et.subElement(block1, "AuthAmt").text(authorizedAmount.toString());
+
+        if(trackData != null) {
+            Et.subElement(block1, "TrackData").text(trackData.getValue());
+            if(trackData.getEncryptionData() != null)
+                block1.append(service.hydrateEncryptionData(trackData.getEncryptionData()));
+        }
+        if(transactionId != null)
+            Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
+
+        if(details != null)
+            block1.append(service.hydrateAdditionalTxnFields(details));
+
+        String clientTxnId = service.getClientTxnId(details);
+        return service.submitTransaction(transaction, clientTxnId);
     }
 
     @Override
-    public HpsTransaction execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosResponseVer10Header header = resp.Ver10.Header;
-
-        HpsTransaction result = new HpsTransaction(hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
-
-        return result;
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("amountIsNotNull", "Amount is required."));
+        this.addValidation(new HpsBuilderValidation("onlyOnePaymentMethod", "Only one payment method is required."));
     }
 
-    public DebitReverseBuilder withAdditionalTransactionFields(HpsTransactionDetails details) {
-        transaction.DebitReversal.Block1.AdditionalTxnFields = hydrateAdditionalTxnFields(details);
-        return this;
+    private boolean amountIsNotNull(){
+        return this.amount != null;
     }
 
-    public DebitReverseBuilder withAuthorizedAmount(BigDecimal authorizedAmount) {
-        transaction.DebitReversal.Block1.AuthAmt = authorizedAmount;
-        return this;
-    }
+    private boolean onlyOnePaymentMethod(){
+        int count = 0;
+        if(trackData != null) count++;
+        if(transactionId != null) count++;
 
-    public DebitReverseBuilder withEncryptionData(HpsEncryptionData encryptionData) {
-        transaction.DebitReversal.Block1.EncryptionData = hydrateEncryptionData(encryptionData);
-        return this;
+        return count == 1;
     }
 }

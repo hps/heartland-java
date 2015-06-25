@@ -1,17 +1,15 @@
 package com.hps.integrator.tests;
 
-import PosGateway.Exchange.Hps.Enums;
 import com.hps.integrator.entities.HpsDirectMarketData;
 import com.hps.integrator.entities.HpsTransaction;
-import com.hps.integrator.entities.HpsTransactionDetails;
 import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.entities.HpsTransactionType;
 import com.hps.integrator.infrastructure.*;
+import com.hps.integrator.infrastructure.emums.TaxTypeType;
 import com.hps.integrator.services.HpsCreditService;
 import com.hps.integrator.tests.testdata.TestCardHolders;
 import com.hps.integrator.tests.testdata.TestCreditCards;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -83,8 +81,8 @@ public class GeneralTests {
         Calendar start = Calendar.getInstance();
         start.add(Calendar.DAY_OF_MONTH, -10);
 
-        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        List<HpsReportTransactionSummary> items = service.list(start.getTime(), new Date());
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
+        HpsReportTransactionSummary[] items = service.list(start.getTime(), new Date());
         assertNotNull(items);
     }
 
@@ -94,7 +92,7 @@ public class GeneralTests {
         start.add(Calendar.DAY_OF_MONTH, -10);
 
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        List<HpsReportTransactionSummary> items = service.list(start.getTime(), Calendar.getInstance().getTime(), HpsTransactionType.Capture);
+        HpsReportTransactionSummary[] items = service.list(start.getTime(), Calendar.getInstance().getTime(), HpsTransactionType.Capture);
         assertNotNull(items);
     }
 
@@ -103,11 +101,11 @@ public class GeneralTests {
         Calendar start = Calendar.getInstance();
         start.add(Calendar.DAY_OF_MONTH, -10);
 
-        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        List<HpsReportTransactionSummary> items = service.list(start.getTime(), Calendar.getInstance().getTime());
-        assertFalse(items.isEmpty());
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
+        HpsReportTransactionSummary[] items = service.list(start.getTime(), Calendar.getInstance().getTime());
+        assertFalse(items.length <= 0);
 
-        HpsReportTransactionSummary item = items.get(0);
+        HpsReportTransactionSummary item = items[0];
         HpsReportTransactionDetails charge = service.get(item.getTransactionID());
         assertNotNull(charge);
     }
@@ -128,7 +126,7 @@ public class GeneralTests {
         HpsAuthorization auth = service.authorize(new BigDecimal("50"), "usd", TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true);
         assertEquals("00", auth.getResponseCode());
 
-        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), null);
+        HpsTransaction capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), null);
         assertEquals("00", capture.getResponseCode());
     }
 
@@ -136,8 +134,13 @@ public class GeneralTests {
     public void Charge_WhenMarketData_ShouldReturnOk() throws HpsException {
         HpsDirectMarketData directMarketData = new HpsDirectMarketData("12345", 10, 8);
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        HpsCharge charge = service.charge(new BigDecimal("50"), "usd", TestCreditCards.validAmex(), TestCardHolders.validCardHolder(),
-                true, false, null, null, directMarketData, false);
+        HpsCharge charge = service.charge(
+                new BigDecimal("50"),
+                "usd",
+                TestCreditCards.validAmex(),
+                TestCardHolders.validCardHolder(),
+                true, false, null, null, directMarketData, false, false, false
+        );
 
         assertEquals("00", charge.getResponseCode());
     }
@@ -149,7 +152,7 @@ public class GeneralTests {
         assertEquals("00", auth.getResponseCode());
 
         HpsDirectMarketData directMarketData = new HpsDirectMarketData("12345", 10, 8);
-        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
+        HpsTransaction capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
         assertEquals("00", capture.getResponseCode());
     }
 
@@ -158,7 +161,7 @@ public class GeneralTests {
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
         HpsCharge charge = service.charge(new BigDecimal("50"), "usd", TestCreditCards.validAmex(), TestCardHolders.validCardHolder(),
-                true, false, null, null, directMarketData, false);
+                true, false, null, null, directMarketData, false, false, false);
 
         assertEquals("00", charge.getResponseCode());
     }
@@ -170,22 +173,22 @@ public class GeneralTests {
         assertEquals("00", auth.getResponseCode());
 
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
-        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
+        HpsTransaction capture = service.captureTxn(auth.getTransactionID(), null, new BigDecimal("25"), directMarketData);
         assertEquals("00", capture.getResponseCode());
     }
 
     @Test
     public void CpcEdit_WhenCpcData_ShouldExecCpcEdit() throws HpsException {
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
-        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
         HpsCharge charge = service.charge(new BigDecimal("50"), "usd", TestCreditCards.validAmex(), TestCardHolders.validCardHolder(),
-                true, false, null, null, directMarketData, true);
+                true, false, null, null, directMarketData, true, false, false);
 
         assertEquals("00", charge.getResponseCode());
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("12345");
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
         cpcData.setTaxAmount(new BigDecimal(1000));
 
         HpsTransaction cpcEdit = service.cpcEdit(charge.getTransactionID(), cpcData);

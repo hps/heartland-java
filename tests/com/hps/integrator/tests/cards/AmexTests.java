@@ -4,7 +4,6 @@ import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.credit.HpsAccountVerify;
 import com.hps.integrator.entities.credit.HpsAuthorization;
 import com.hps.integrator.entities.credit.HpsCharge;
-import com.hps.integrator.entities.credit.HpsReportTransactionDetails;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.HpsIssuerException;
 import com.hps.integrator.infrastructure.HpsIssuerExceptionCodes;
@@ -258,14 +257,14 @@ public class AmexTests {
     @Test
     public void Amex_Verify_ShouldReturnOk() throws HpsException {
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        HpsAccountVerify response = service.verify(TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true);
+        HpsAccountVerify response = service.verify(TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true, false, false);
         assertEquals("00", response.getResponseCode());
     }
 
     @Test
     public void Amex_VerifyWithToken_ShouldReturnOk() throws HpsException {
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        HpsAccountVerify response = service.verify(TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true);
+        HpsAccountVerify response = service.verify(TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true, false, false);
         response = service.verify(response.getTokenData().getTokenValue(), TestCardHolders.validCardHolder());
 
         assertEquals("00", response.getResponseCode());
@@ -280,9 +279,9 @@ public class AmexTests {
 
     @Test
     public void Amex_AuthorizeAndRequestToken_ShouldGetTokenAndReturnOk() throws HpsException {
-        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
         HpsAuthorization response = service.authorize(new BigDecimal("50"), "usd", TestCreditCards.validAmex(),
-                TestCardHolders.validCardHolder(), true, true, null, null, false);
+                TestCardHolders.validCardHolder(), true, true, null, null, false, false, false);
         assertEquals(0, response.getTokenData().getTokenRspCode());
         assertEquals("00", response.getResponseCode());
     }
@@ -293,7 +292,7 @@ public class AmexTests {
         HpsAuthorization auth = service.authorize(new BigDecimal("50"), "usd", TestCreditCards.validAmex(), TestCardHolders.validCardHolder(), true);
         assertEquals("00", auth.getResponseCode());
 
-        HpsReportTransactionDetails capture = service.captureTxn(auth.getTransactionID());
+        HpsTransaction capture = service.captureTxn(auth.getTransactionID());
         assertEquals("00", capture.getResponseCode());
     }
 

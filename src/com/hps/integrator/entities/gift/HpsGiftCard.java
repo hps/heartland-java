@@ -1,47 +1,46 @@
 package com.hps.integrator.entities.gift;
 
+import com.hps.integrator.entities.HpsEncryptionData;
+import com.hps.integrator.infrastructure.Element;
+
 public class HpsGiftCard {
-    public HpsGiftCard() {
-        isTrackData = false;
-    }
-
-    private String number;
+    private String trackData;
+    private String cardNumber;
     private String alias;
-    private int expMonth;
-    private int expYear;
-    private boolean isTrackData;
+    private String tokenValue;
     private HpsEncryptionData encryptionData;
+    private String pin;
 
-    public boolean isTrackData() {
-        return isTrackData;
+    public String getTrackData() {
+        return trackData;
     }
 
-    public void setTrackData(boolean isTrackData) {
-        this.isTrackData = isTrackData;
+    public void setTrackData(String trackData) {
+        this.trackData = trackData;
     }
 
-    public String getNumber() {
-        return number;
+    public String getCardNumber() {
+        return cardNumber;
     }
 
-    public void setNumber(String number) {
-        this.number = number;
+    public void setCardNumber(String cardNumber) {
+        this.cardNumber = cardNumber;
     }
 
-    public int getExpMonth() {
-        return expMonth;
+    public String getAlias() {
+        return alias;
     }
 
-    public void setExpMonth(int expMonth) {
-        this.expMonth = expMonth;
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
-    public int getExpYear() {
-        return expYear;
+    public String getTokenValue() {
+        return tokenValue;
     }
 
-    public void setExpYear(int expYear) {
-        this.expYear = expYear;
+    public void setTokenValue(String tokenValue) {
+        this.tokenValue = tokenValue;
     }
 
     public HpsEncryptionData getEncryptionData() {
@@ -52,11 +51,23 @@ public class HpsGiftCard {
         this.encryptionData = encryptionData;
     }
 
-    public String getAlias() {
-        return alias;
+    public String getPin() {
+        return pin;
     }
 
-    public void setAlias(String alias) {
-        this.alias = alias;
+    public void setPin(String pin) {
+        this.pin = pin;
+    }
+
+    public static HpsGiftCard fromElement(Element item) {
+        HpsGiftCard card = new HpsGiftCard();
+        card.setTrackData(item.getString("TrackData"));
+        card.setCardNumber(item.getString("CardNbr"));
+        card.setAlias(item.getString("Alias"));
+        card.setTokenValue(item.getString("TokenValue"));
+//        card.setEncryptionData(null);
+        card.setPin(item.getString("PIN"));
+
+        return card;
     }
 }

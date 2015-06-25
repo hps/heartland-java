@@ -471,7 +471,7 @@ public class DiscoverTests {
     @Test
     public void Discover_VerifyWithToken_ShouldReturnOk() throws HpsException {
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
-        HpsAccountVerify response = service.verify(TestCreditCards.validDiscover(), TestCardHolders.validCardHolder(), true);
+        HpsAccountVerify response = service.verify(TestCreditCards.validDiscover(), TestCardHolders.validCardHolder(), true, false, false);
         response = service.verify(response.getTokenData().getTokenValue(), TestCardHolders.validCardHolder());
 
         assertEquals("85", response.getResponseCode());
@@ -491,7 +491,7 @@ public class DiscoverTests {
 	{
 		HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
 		HpsAuthorization response = service.authorize(new BigDecimal("50"), "usd", TestCreditCards.validDiscover(),
-                TestCardHolders.validCardHolder(), true, true, null, null, false);
+                TestCardHolders.validCardHolder(), true, true, null, null, false, false, false);
 		assertEquals(0, response.getTokenData().getTokenRspCode());
 		assertEquals("00", response.getResponseCode());
 	}
@@ -504,7 +504,7 @@ public class DiscoverTests {
                 TestCardHolders.validCardHolder(), true);
 		assertEquals("00", authResponse.getResponseCode());
 		
-		HpsReportTransactionDetails capture = service.captureTxn(authResponse.getTransactionID());
+		HpsTransaction capture = service.captureTxn(authResponse.getTransactionID());
 		assertEquals("00", capture.getResponseCode());
 	}
 
@@ -522,7 +522,7 @@ public class DiscoverTests {
 	{
 		HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig());
 		HpsCharge charge = service.charge(amt, "usd", TestCreditCards.validDiscover(),
-                TestCardHolders.validCardHolder(), true, false, null, null, null, false);
+                TestCardHolders.validCardHolder(), true, false, null, null, null, false, false, false);
 		assertNotNull(charge);
 		return charge;
 	}

@@ -1,25 +1,23 @@
 package com.hps.integrator.services;
 
-import PosGateway.Exchange.Hps.*;
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.applepay.ecv1.PaymentData3DS;
 import com.hps.integrator.entities.*;
 import com.hps.integrator.entities.credit.*;
-import com.hps.integrator.entities.payplan.HpsPayPlanSchedule;
-import com.hps.integrator.fluent.*;
 import com.hps.integrator.infrastructure.*;
 import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
 import com.hps.integrator.infrastructure.validation.HpsInputValidation;
 import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class HpsCreditService extends HpsSoapGatewayService {
+    HpsTransactionType filterBy;
 
     public HpsCreditService() throws HpsException {
         super();
@@ -29,215 +27,45 @@ public class HpsCreditService extends HpsSoapGatewayService {
         super(servicesConfig);
     }
 
-    public CreditAuthPaymentTypeBuilder authorize(BigDecimal amount) throws HpsException {
-        HpsInputValidation.checkAmount(amount);
-        return new CreditAuthPaymentTypeBuilder(new CreditAuthBuilder(servicesConfig, amount));
+    public HpsCreditService(IHpsServicesConfig servicesConfig, boolean enableLogging) throws HpsException {
+        super(servicesConfig, enableLogging);
     }
 
-    public CreditChargePaymentTypeBuilder charge(BigDecimal amount) throws HpsException {
-        HpsInputValidation.checkAmount(amount);
-        return new CreditChargePaymentTypeBuilder(new CreditChargeBuilder(servicesConfig, amount));
-    }
-
-    public CreditOfflineChargePaymentTypeBuilder offlineCharge(BigDecimal amount) throws HpsException {
-        HpsInputValidation.checkAmount(amount);
-        return new CreditOfflineChargePaymentTypeBuilder(new CreditOfflineChargeBuilder(servicesConfig, amount));
-    }
-
-    public CreditOfflineAuthPaymentTypeBuilder offlineAuth(BigDecimal amount) throws HpsException {
-        HpsInputValidation.checkAmount(amount);
-        return new CreditOfflineAuthPaymentTypeBuilder(new CreditOfflineAuthBuilder(servicesConfig, amount));
-    }
-
-    public CreditCaptureBuilder capture(int transactionId) throws HpsException {
-        return new CreditCaptureBuilder(servicesConfig, transactionId);
-    }
-
-    public CreditEditUsingBuilder edit() throws HpsException {
-        return new CreditEditUsingBuilder(new CreditEditBuilder(servicesConfig));
-    }
-
-    public CreditRefundUsingBuilder refund(BigDecimal amount) throws HpsException {
-        return new CreditRefundUsingBuilder(new CreditRefundBuilder(servicesConfig, amount));
-    }
-
-    public CreditReverseUsingBuilder reverse(BigDecimal amount) throws HpsException {
-        return new CreditReverseUsingBuilder(new CreditReverseBuilder(servicesConfig, amount));
-    }
-
-    public CreditVerifyUsingBuilder verify() throws HpsException {
-        return new CreditVerifyUsingBuilder(new CreditVerifyBuilder(servicesConfig));
-    }
-
-    public CreditVoidBuilder voidTransaction(int transactionId) throws HpsException {
-        return new CreditVoidBuilder(servicesConfig, transactionId);
-    }
-
-    public CreditRecurringPaymentTypeBuilder recurring(BigDecimal amount) throws HpsException {
-        HpsInputValidation.checkAmount(amount);
-        return new CreditRecurringPaymentTypeBuilder(new CreditRecurringBuilder(servicesConfig, amount));
-    }
-
-    public CreditRecurringPaymentTypeBuilder recurring(BigDecimal amount, String scheduleId) throws HpsException {
-        HpsInputValidation.checkAmount(amount);
-        return new CreditRecurringPaymentTypeBuilder(new CreditRecurringBuilder(servicesConfig, amount, scheduleId));
-    };
-
-    public CreditBalanceInquiryUsingBuilder prePaidBalanceInquiry() throws HpsException {
-        return new CreditBalanceInquiryUsingBuilder(new CreditBalanceInquiryBuilder(servicesConfig));
-    }
-
-    public CreditAddValueUsingBuilder prePaidAddValue(BigDecimal amount) throws HpsException {
-        return new CreditAddValueUsingBuilder(new CreditAddValueBuilder(servicesConfig, amount));
-    }
-
-    public CreditCpcEditBuilder cpcEdit(int transactionId) throws HpsException {
-        return new CreditCpcEditBuilder(servicesConfig, transactionId);
-    }
-
-    public HpsReportTransactionDetails get(int transactionId) throws HpsException {
+    public HpsReportTransactionDetails get(Integer transactionId) throws HpsException {
         if(transactionId <= 0) {
             throw new HpsInvalidRequestException("Invalid transaction ID.");
         }
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosReportTxnDetailReqType item = new PosReportTxnDetailReqType();
-        item.TxnId = transactionId;
-        transaction.ReportTxnDetail = item;
+        Element transaction = Et.element("ReportTxnDetail");
+        Et.subElement(transaction, "TxnId").text(transactionId.toString());
 
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosReportTxnDetailRspType reportResponse = resp.Ver10.Transaction.ReportTxnDetail;
-        HpsTransactionHeader header = this.hydrateTransactionHeader(resp.Ver10.Header);
-        HpsReportTransactionDetails result = new HpsReportTransactionDetails(header);
-
-        result.setTransactionID(reportResponse.GatewayTxnId);
-        result.setOriginalTransactionId(reportResponse.OriginalGatewayTxnId);
-        result.setAuthorizedAmount(reportResponse.Data.AuthAmt);
-        result.setAuthorizationCode(reportResponse.Data.AuthCode);
-        result.setAvsResultCode(reportResponse.Data.AVSRsltCode);
-        result.setAvsResultText(reportResponse.Data.AVSRsltText);
-        result.setCardType(reportResponse.Data.CardType);
-        result.setMaskedCardNumber(reportResponse.Data.MaskedCardNbr);
-        result.setDescriptor(reportResponse.Data.TxnDescriptor);
-        result.setTransactionType(HpsTransaction.serviceNameToTransactionType(reportResponse.ServiceName));
-        result.setTransactionDate(reportResponse.ReqUtcDT);
-        result.setCpcIndicator(reportResponse.Data.CPCInd);
-        result.setCvvResultCode(reportResponse.Data.CVVRsltCode);
-        result.setCvvResultText(reportResponse.Data.CVVRsltText);
-        result.setReferenceNumber(reportResponse.Data.RefNbr);
-        result.setResponseCode(reportResponse.Data.RspCode);
-        result.setResponseText(reportResponse.Data.RspText);
-
-        String tokenizationMessage = reportResponse.Data.TokenizationMsg;
-
-        if (tokenizationMessage != null) {
-            result.setTokenData(new HpsTokenData(tokenizationMessage));
-        }
-
-        /* Set the additional transaction fields. It seems redundant to have a separate "details" object to
-         * encapsulate these fields within a HpsReportTransactionDetails object. As such they are defined inside the
-         * HpsReportTransactionDetails class directly.*/
-        AdditionalTxnFieldsType additionalFields = reportResponse.Data.AdditionalTxnFields;
-        if (additionalFields != null) {
-            result.setCustomerId(additionalFields.CustomerID);
-            result.setInvoiceNumber(additionalFields.InvoiceNbr);
-            result.setMemo(additionalFields.Description);
-        }
-
-        String headerResponseCode = Integer.toString(resp.Ver10.Header.GatewayRspCode);
-        String dataResponseCode = reportResponse.Data.RspCode;
-
-        if (!headerResponseCode.equals("0") || (dataResponseCode != null && !dataResponseCode.equals("00"))) {
-            HpsCreditExceptions exceptions = new HpsCreditExceptions();
-
-            if (!headerResponseCode.equals("0")) {
-                String headerResponseMsg = resp.Ver10.Header.GatewayRspMsg;
-                exceptions.setHpsException(HpsGatewayResponseValidation.getException(Integer.parseInt(headerResponseCode), headerResponseMsg));
-            }
-
-            if (!dataResponseCode.equals("00")) {
-                String dataResponseText = reportResponse.Data.RspText;
-                exceptions.setHpsIssuerException(HpsIssuerResponseValidation.getException(transactionId, dataResponseCode, dataResponseText));
-            }
-
-            result.setExceptions(exceptions);
-        }
-
-        result.setResponseCode("00");
-        result.setResponseText("");
-
-        return result;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsReportTransactionDetails().fromElementTree(response);
     }
 
-    public List<HpsReportTransactionSummary> list(Date start, Date end) throws HpsException {
+    public HpsReportTransactionSummary[] list(Date start, Date end) throws HpsException {
         return this.list(start, end, null);
     }
 
-    public List<HpsReportTransactionSummary> list(Date start, Date end, HpsTransactionType filterBy) throws HpsException {
-        HpsInputValidation.checkDateNotFuture(start, "start");
-        HpsInputValidation.checkDateNotFuture(end, "end");
+    public HpsReportTransactionSummary[] list(Date start, Date end, HpsTransactionType filterBy) throws HpsException {
+        HpsInputValidation.checkDateNotFuture(start, "Start Date");
+        HpsInputValidation.checkDateNotFuture(end, "End Date");
+        this.filterBy = filterBy;
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosReportActivityReqType item = new PosReportActivityReqType();
-        item.RptStartUtcDT = start;
-        item.RptEndUtcDT = end;
-        transaction.ReportActivity = item;
+        Element transaction = Et.element("ReportActivity");
+        Et.subElement(transaction, "RptStartUtcDT").text(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(start));
+        Et.subElement(transaction, "RptEndUtcDT").text(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(end));
 
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosReportActivityRspType reportResponse = resp.Ver10.Transaction.ReportActivity;
-        String serviceName = (filterBy == null) ? "" : HpsTransaction.transactionTypeToServiceName(filterBy);
-        List<HpsReportTransactionSummary> transactionList = new ArrayList<HpsReportTransactionSummary>();
-
-        for (PosReportActivityRspTypeDetails charge : reportResponse.Details) {
-            if (filterBy == null || charge.ServiceName.equals(serviceName)) {
-                HpsReportTransactionSummary summary = new HpsReportTransactionSummary();
-                summary.setTransactionID(charge.GatewayTxnId);
-                summary.setOriginalTransactionId(charge.OriginalGatewayTxnId);
-                summary.setMaskedCardNumber(charge.MaskedCardNbr);
-                summary.setResponseCode(charge.IssuerRspCode);
-                summary.setResponseText(charge.IssuerRspText);
-
-                if (filterBy != null)
-                    summary.setTransactionType(HpsTransaction.serviceNameToTransactionType(charge.ServiceName));
-
-                String gatewayRspCode = Integer.toString(charge.GatewayRspCode);
-                String issuerRspCode = charge.IssuerRspCode;
-
-                if (!gatewayRspCode.equals("0") || (issuerRspCode != null && !issuerRspCode.equals("00"))) {
-                    HpsCreditExceptions exceptions = new HpsCreditExceptions();
-
-                    if (!gatewayRspCode.equals("0")) {
-                        String gatewayRspMsg = charge.GatewayRspMsg;
-                        exceptions.setHpsException(HpsGatewayResponseValidation.getException(Integer.parseInt(gatewayRspCode), gatewayRspMsg));
-                    }
-
-                    if (issuerRspCode != null && !issuerRspCode.equals("00")) {
-                        String issuerRspMsg = charge.IssuerRspText;
-                        exceptions.setHpsIssuerException(HpsIssuerResponseValidation.getException(charge.GatewayTxnId, issuerRspCode, issuerRspMsg));
-                    }
-
-                    summary.setExceptions(exceptions);
-                }
-
-                transactionList.add(summary);
-            }
-        }
-
-        return transactionList;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsReportTransactionSummary().fromElementTree(response, filterBy);
     }
 
     public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
-        return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false);
+        return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false);
     }
 
     public HpsCharge charge(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
-        return charge(amount, currency, token, cardHolder, allowDuplicates, false, null, null, null, false);
+        return charge(amount, currency, token, cardHolder, allowDuplicates, false, null, null, null, false, false, false);
     }
 
     public HpsCharge charge(PaymentData paymentData, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
@@ -263,34 +91,37 @@ public class HpsCreditService extends HpsSoapGatewayService {
      */
     public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,
                             boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, HpsDirectMarketData directMarketData,
-                            boolean cpcRequest) throws HpsException {
+                            boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditSaleReqType item = new PosCreditSaleReqType();
-        CreditSaleReqBlock1Type block1 = new CreditSaleReqBlock1Type();
+        Element transaction = Et.element("CreditSale");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.AllowDup = allowDuplicates ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        block1.Amt = amount;
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        if (cardHolder != null)
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
+        Element cardData = Et.subElement(block1, "CardData");
+        if(card != null) {
+            cardData.append(hydrateCardManualEntry(card, cardPresent, readerPresent));
+            if(card.getEncryptionData() != null)
+                cardData.append(hydrateEncryptionData(card.getEncryptionData()));
+        }
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
 
-        CardDataType cardDataType = new CardDataType();
+        if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
+        if(descriptor != null)
+            Et.subElement(block1, "TxnDescriptor").text(descriptor);
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+        if(directMarketData != null)
+            block1.append(hydrateDirectMarketData(directMarketData));
 
-        cardDataType.TokenRequest = (requestMultiUseToken) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        cardDataType.ManualEntry = this.hydrateCardManualEntry(card);
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        block1.DirectMktData = this.hydrateDirectMarketData(directMarketData);
-        block1.CPCReq = (cpcRequest) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        if (descriptor != null && descriptor.length() > 0) block1.TxnDescriptor = descriptor;
-
-        block1.CardData = cardDataType;
-        item.Block1 = block1;
-        transaction.CreditSale = item;
-
-        return this.submitCharge(transaction, amount, currency);
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsCharge().fromElementTree(response);
     }
 
     /**
@@ -312,37 +143,34 @@ public class HpsCreditService extends HpsSoapGatewayService {
      */
     public HpsCharge charge(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates,
                             boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details,
-                            HpsDirectMarketData directMarketData, boolean cpcRequest) throws HpsException {
+                            HpsDirectMarketData directMarketData, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditSaleReqType item = new PosCreditSaleReqType();
-        CreditSaleReqBlock1Type block1 = new CreditSaleReqBlock1Type();
+        Element transaction = Et.element("CreditSale");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.AllowDup = allowDuplicates ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        block1.DirectMktData = this.hydrateDirectMarketData(directMarketData);
-        block1.CPCReq = (cpcRequest) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        if (descriptor != null && descriptor.length() > 0) block1.TxnDescriptor = descriptor;
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        if (cardHolder != null) {
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
-        }
+        Element cardData = Et.subElement(block1, "CardData");
+        if(token != null)
+            cardData.append(hydrateTokenData(token, cardPresent, readerPresent));
 
-        CardDataType cardDataType = new CardDataType();
-        CardDataTypeTokenData tokenData = new CardDataTypeTokenData();
-        tokenData.TokenValue = token;
+        if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+        if(descriptor != null)
+            Et.subElement(block1, "TxnDescriptor").text(descriptor);
+        if(directMarketData != null)
+            block1.append(hydrateDirectMarketData(directMarketData));
 
-        if (requestMultiUseToken) cardDataType.TokenRequest = Enums.booleanType.fromString("Y");
-
-        cardDataType.TokenData = tokenData;
-        block1.CardData = cardDataType;
-        transaction.CreditSale = item;
-        item.Block1 = block1;
-
-        return this.submitCharge(transaction, amount, currency);
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsCharge().fromElementTree(response);
     }
 
     public HpsCharge charge(PaymentData paymentData, HpsCardHolder cardHolder, boolean allowDuplicates,
@@ -353,103 +181,93 @@ public class HpsCreditService extends HpsSoapGatewayService {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency("usd"); // TODO: this needs be parsed from the payment data
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditSaleReqType item = new PosCreditSaleReqType();
-        CreditSaleReqBlock1Type block1 = new CreditSaleReqBlock1Type();
+        Element transaction = Et.element("CreditSale");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.AllowDup = allowDuplicates ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        block1.DirectMktData = this.hydrateDirectMarketData(directMarketData);
-        if (descriptor != null && descriptor.length() > 0) block1.TxnDescriptor = descriptor;
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        if (cardHolder != null) {
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
-        }
-
-        CardDataType cardDataType = new CardDataType();
-        CardDataTypeManualEntry manualEntry = new CardDataTypeManualEntry();
-        manualEntry.CardNbr = paymentData.getApplicationPrimaryAccountNumber();
+        Element cardData = Et.subElement(block1, "CardData");
+        Element manualEntry = Et.element("ManualEntry");
+        Et.subElement(manualEntry, "CardNbr").text(paymentData.getApplicationPrimaryAccountNumber());
         String expDate = paymentData.getApplicationExpirationDate();
-        manualEntry.ExpMonth = Integer.parseInt(expDate.substring(2, 4));
-        manualEntry.ExpYear = Integer.parseInt("20" + expDate.substring(0, 2));
+        Et.subElement(manualEntry, "ExpMonth").text(expDate.substring(2, 4));
+        Et.subElement(manualEntry, "ExpYear").text("20" + expDate.substring(0, 2));
+        cardData.append(manualEntry);
 
-        if (requestMultiUseToken) cardDataType.TokenRequest = Enums.booleanType.fromString("Y");
+        block1.append(hydrateSecureECommerce(paymentData.getPaymentData()));
 
-        cardDataType.ManualEntry = manualEntry;
-        block1.SecureECommerce = this.hydrateSecureEcommerce(paymentData.getPaymentData());
-        block1.CardData = cardDataType;
-        transaction.CreditSale = item;
-        item.Block1 = block1;
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+        if(descriptor != null)
+            Et.subElement(block1, "TxnDescriptor").text(descriptor);
+        if(directMarketData != null)
+            block1.append(hydrateDirectMarketData(directMarketData));
 
-        return this.submitCharge(transaction, amount, "usd");
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsCharge().fromElementTree(response);
     }
 
     public HpsAccountVerify verify(HpsCreditCard card) throws HpsException {
-        return this.verify(card, null, false);
+        return this.verify(card, null, false, false, false);
     }
 
     public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder) throws HpsException {
-        return this.verify(card, cardHolder, false);
+        return this.verify(card, cardHolder, false, false, false);
     }
 
-    public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder, boolean requestMultiUseToken) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditAccountVerifyReqType item = new PosCreditAccountVerifyReqType();
-        CreditAccountVerifyBlock1Type block1 = new CreditAccountVerifyBlock1Type();
+    public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder, boolean requestMultiUseToken, boolean cardPresent, boolean readerPresent) throws HpsException {
+        Element transaction = Et.element("CreditAccountVerify");
+        Element block1 = Et.subElement(transaction, "Block1");
 
-        if (cardHolder != null)
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        Enums.booleanType multiUseToken = (requestMultiUseToken) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        CardDataType cardData = new CardDataType();
-        cardData.TokenRequest = multiUseToken;
-        cardData.ManualEntry = this.hydrateCardManualEntry(card);
+        Element cardData = Et.subElement(block1, "CardData");
+        if(card != null) {
+            cardData.append(hydrateCardManualEntry(card, cardPresent, readerPresent));
+            if(card.getEncryptionData() != null)
+                cardData.append(hydrateEncryptionData(card.getEncryptionData()));
+        }
 
-        block1.CardData = cardData;
-        item.Block1 = block1;
-        transaction.CreditAccountVerify = item;
-
-        return submitVerify(transaction);
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsAccountVerify().fromElementTree(response);
     }
 
     public HpsAccountVerify verify(String token) throws HpsException {
-        return this.verify(token, null, false);
+        return this.verify(token, null, false, false, false);
     }
 
     public HpsAccountVerify verify(String token, HpsCardHolder cardHolder) throws HpsException {
-        return this.verify(token, cardHolder, false);
+        return this.verify(token, cardHolder, false, false, false);
     }
 
-    public HpsAccountVerify verify(String token, HpsCardHolder cardHolder, boolean requestMultiUseToken) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditAccountVerifyReqType item = new PosCreditAccountVerifyReqType();
-        CreditAccountVerifyBlock1Type block1 = new CreditAccountVerifyBlock1Type();
+    public HpsAccountVerify verify(String token, HpsCardHolder cardHolder, boolean requestMultiUseToken, boolean cardPresent, boolean readerPresent) throws HpsException {
+        Element transaction = Et.element("CreditAccountVerify");
+        Element block1 = Et.subElement(transaction, "Block1");
 
-        if (cardHolder != null)
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        Enums.booleanType multiUseToken = (requestMultiUseToken) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        CardDataType cardData = new CardDataType();
-        cardData.TokenRequest = multiUseToken;
+        Element cardData = Et.subElement(block1, "CardData");
+        cardData.append(hydrateTokenData(token, cardPresent, readerPresent));
 
-        CardDataTypeTokenData tokenData = new CardDataTypeTokenData();
-        tokenData.TokenValue = token;
-        cardData.TokenData = tokenData;
-
-        block1.CardData = cardData;
-        item.Block1 = block1;
-        transaction.CreditAccountVerify = item;
-
-        return submitVerify(transaction);
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsAccountVerify().fromElementTree(response);
     }
 
     public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
-        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false);
+        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false);
     }
 
     public HpsAuthorization authorize(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
-        return this.authorize(amount, currency, token, cardHolder, allowDuplicates, false, null, null, false);
+        return this.authorize(amount, currency, token, cardHolder, allowDuplicates, false, null, null, false, false, false);
     }
 
     public HpsAuthorization authorize(PaymentData paymentData, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
@@ -474,29 +292,33 @@ public class HpsCreditService extends HpsSoapGatewayService {
      * @throws HpsException
      */
     public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,
-                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest) throws HpsException {
+                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditAuthReqType item = new PosCreditAuthReqType();
-        CreditAuthReqBlock1Type block1 = new CreditAuthReqBlock1Type();
-        CardDataType cardData = new CardDataType();
+        Element transaction = Et.element("CreditAuth");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.AllowDup = allowDuplicates ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        block1.CPCReq = (cpcRequest) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        if (descriptor != null && descriptor.length() > 0) block1.TxnDescriptor = descriptor;
-        if (cardHolder != null) block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
-        if (requestMultiUseToken) cardData.TokenRequest = Enums.booleanType.fromString("Y");
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        cardData.ManualEntry = this.hydrateCardManualEntry(card);
-        block1.CardData = cardData;
-        item.Block1 = block1;
-        transaction.CreditAuth = item;
+        Element cardData = Et.subElement(block1, "CardData");
+        cardData.append(hydrateCardManualEntry(card, cardPresent, readerPresent));
+        if(card.getEncryptionData() != null)
+            cardData.append(hydrateEncryptionData(card.getEncryptionData()));
 
-        return this.submitAuthorize(transaction, amount, currency);
+        if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+        if(descriptor != null)
+            Et.subElement(block1, "TxnDescriptor").text(descriptor);
+
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsAuthorization().fromElementTree(response);
     }
 
     /**
@@ -517,32 +339,30 @@ public class HpsCreditService extends HpsSoapGatewayService {
      * @throws HpsException
      */
     public HpsAuthorization authorize(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates,
-                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest) throws HpsException {
+                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditAuthReqType item = new PosCreditAuthReqType();
-        CreditAuthReqBlock1Type block1 = new CreditAuthReqBlock1Type();
-        CardDataType cardData = new CardDataType();
+        Element transaction = Et.element("CreditAuth");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        block1.AllowDup = allowDuplicates ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        block1.CPCReq = (cpcRequest) ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        if (descriptor != null && descriptor.length() > 0) block1.TxnDescriptor = descriptor;
+        Element cardData = Et.subElement(block1, "CardData");
+        cardData.append(hydrateTokenData(token, cardPresent, readerPresent));
 
-        if (cardHolder != null) block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
-        if (requestMultiUseToken) cardData.TokenRequest = Enums.booleanType.fromString("Y");
+        if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+        if(descriptor != null)
+            Et.subElement(block1, "TxnDescriptor").text(descriptor);
 
-        CardDataTypeTokenData tokenData = new CardDataTypeTokenData();
-        tokenData.TokenValue = token;
-        cardData.TokenData = tokenData;
-        block1.CardData = cardData;
-        item.Block1 = block1;
-        transaction.CreditAuth = item;
-
-        return this.submitAuthorize(transaction, amount, currency);
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsAuthorization().fromElementTree(response);
     }
 
     public HpsAuthorization authorize(PaymentData paymentData, HpsCardHolder cardHolder, boolean allowDuplicates,
@@ -552,64 +372,66 @@ public class HpsCreditService extends HpsSoapGatewayService {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency("usd");
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditAuthReqType item = new PosCreditAuthReqType();
-        CreditAuthReqBlock1Type block1 = new CreditAuthReqBlock1Type();
-        CardDataType cardData = new CardDataType();
+        Element transaction = Et.element("CreditAuth");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.AllowDup = allowDuplicates ? Enums.booleanType.fromString("Y") : Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        if (descriptor != null && descriptor.length() > 0) block1.TxnDescriptor = descriptor;
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        if (cardHolder != null) block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
-        if (requestMultiUseToken) cardData.TokenRequest = Enums.booleanType.fromString("Y");
-
-        CardDataTypeManualEntry manualEntry = new CardDataTypeManualEntry();
-        manualEntry.CardNbr = paymentData.getApplicationPrimaryAccountNumber();
+        Element cardData = Et.subElement(block1, "CardData");
+        Element manualEntry = Et.element("ManualEntry");
+        Et.subElement(manualEntry, "CardNbr").text(paymentData.getApplicationPrimaryAccountNumber());
         String expDate = paymentData.getApplicationExpirationDate();
-        manualEntry.ExpMonth = Integer.parseInt(expDate.substring(2, 4));
-        manualEntry.ExpYear = Integer.parseInt("20" + expDate.substring(0, 2));
+        Et.subElement(manualEntry, "ExpMonth").text(expDate.substring(2, 4));
+        Et.subElement(manualEntry, "ExpYear").text("20" + expDate.substring(0, 2));
+        cardData.append(manualEntry);
 
-        cardData.ManualEntry = manualEntry;
-        block1.CardData = cardData;
-        block1.SecureECommerce = this.hydrateSecureEcommerce(paymentData.getPaymentData());
-        item.Block1 = block1;
-        transaction.CreditAuth = item;
+        block1.append(hydrateSecureECommerce(paymentData.getPaymentData()));
 
-        return this.submitAuthorize(transaction, amount, "usd");
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsAuthorization().fromElementTree(response);
     }
 
-    public HpsReportTransactionDetails captureTxn(int transactionId) throws HpsException {
+    public HpsTransaction captureTxn(int transactionId) throws HpsException {
         return this.captureTxn(transactionId, null, null, null);
     }
 
-    public HpsReportTransactionDetails captureTxn(int transactionId, HpsDirectMarketData directMarketData) throws HpsException {
+    public HpsTransaction captureTxn(int transactionId, HpsDirectMarketData directMarketData) throws HpsException {
         return this.captureTxn(transactionId, null, null, directMarketData);
     }
 
-    public HpsReportTransactionDetails captureTxn(int transactionId, BigDecimal amount) throws HpsException {
+    public HpsTransaction captureTxn(int transactionId, BigDecimal amount) throws HpsException {
         return this.captureTxn(transactionId, amount, null, null);
     }
 
-    public HpsReportTransactionDetails captureTxn(int transactionId, BigDecimal amount, HpsDirectMarketData directMarketData) throws HpsException {
+    public HpsTransaction captureTxn(int transactionId, BigDecimal amount, HpsDirectMarketData directMarketData) throws HpsException {
         return this.captureTxn(transactionId, amount, null, directMarketData);
     }
 
-    public HpsReportTransactionDetails captureTxn(int transactionId, BigDecimal amount, BigDecimal gratuity, HpsDirectMarketData directMarketData) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditAddToBatchReqType item = new PosCreditAddToBatchReqType();
-        item.GatewayTxnId = transactionId;
-        item.Amt = amount;
-        item.GratuityAmtInfo = gratuity;
-        item.DirectMktData = hydrateDirectMarketData(directMarketData);
-        transaction.CreditAddToBatch = item;
+    public HpsTransaction captureTxn(Integer transactionId, BigDecimal amount, BigDecimal gratuity, HpsDirectMarketData directMarketData) throws HpsException {
+        Element transaction = Et.element("CreditAddToBatch");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
+        if(amount != null)
+            Et.subElement(transaction, "Amt").text(amount.toString());
 
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        if(gratuity != null)
+            Et.subElement(transaction, "GratuityAmtInfo").text(gratuity.toString());
 
-        return this.get(transactionId);
+        if(directMarketData != null)
+            transaction.append(hydrateDirectMarketData(directMarketData));
+
+        ElementTree response = submitTransaction(transaction);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
     public HpsRefund refund(BigDecimal amount, String currency, HpsCreditCard card) throws HpsException {
@@ -633,46 +455,50 @@ public class HpsCreditService extends HpsSoapGatewayService {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditReturnReqType item = new PosCreditReturnReqType();
-        CreditReturnReqBlock1Type block1 = new CreditReturnReqBlock1Type();
-        CardDataType cardData = new CardDataType();
+        Element transaction = Et.element("CreditReturn");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.AllowDup = Enums.booleanType.fromString("Y");
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        if (cardHolder != null)
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
+        Element cardData = Et.subElement(block1, "CardData");
+        cardData.append(hydrateCardManualEntry(card, false, false));
 
-        cardData.ManualEntry = this.hydrateCardManualEntry(card);
-        block1.CardData = cardData;
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        item.Block1 = block1;
-        transaction.CreditReturn = item;
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
 
-        return this.submitRefund(transaction);
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        HpsRefund trans = new HpsRefund().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
-    public HpsRefund refund(BigDecimal amount, String currency, int transactionId, HpsCardHolder cardHolder,
+    public HpsRefund refund(BigDecimal amount, String currency, Integer transactionId, HpsCardHolder cardHolder,
                             HpsTransactionDetails details) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditReturnReqType item = new PosCreditReturnReqType();
-        CreditReturnReqBlock1Type block1 = new CreditReturnReqBlock1Type();
-        block1.AllowDup = Enums.booleanType.fromString("Y");
+        Element transaction = Et.element("CreditReturn");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        if (cardHolder != null)
-            block1.CardHolderData = this.hydrateCardHolderData(cardHolder);
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
 
-        block1.GatewayTxnId = transactionId;
-        block1.Amt = amount;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        item.Block1 = block1;
-        transaction.CreditReturn = item;
+        Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
 
-        return this.submitRefund(transaction);
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        HpsRefund trans = new HpsRefund().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
     public HpsReversal reverse(HpsCreditCard card, BigDecimal amount, String currency) throws HpsException {
@@ -688,378 +514,153 @@ public class HpsCreditService extends HpsSoapGatewayService {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditReversalReqType item = new PosCreditReversalReqType();
-        CreditReversalReqBlock1Type block1 = new CreditReversalReqBlock1Type();
-        CardDataType cardData = new CardDataType();
+        Element transaction = Et.element("CreditReversal");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        block1.Amt = amount;
-        block1.CardData = cardData;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
-        cardData.ManualEntry = this.hydrateCardManualEntry(card);
+        Element cardData = Et.subElement(block1, "CardData");
+        cardData.append(hydrateCardManualEntry(card, false, false));
 
-        item.Block1 = block1;
-        transaction.CreditReversal = item;
-        return this.submitReverse(transaction);
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
+
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsReversal().fromElementTree(response);
     }
 
-    public HpsReversal reverse(int transactionId, BigDecimal amount, String currency,
+    public HpsReversal reverse(Integer transactionId, BigDecimal amount, String currency,
                                HpsTransactionDetails details) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditReversalReqType item = new PosCreditReversalReqType();
-        CreditReversalReqBlock1Type block1 = new CreditReversalReqBlock1Type();
+        Element transaction = Et.element("CreditReversal");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
 
-        block1.Amt = amount;
-        block1.GatewayTxnId = transactionId;
-        block1.AdditionalTxnFields = this.hydrateAdditionalTxnFields(details);
+        if(details != null)
+            block1.append(hydrateAdditionalTxnFields(details));
 
-        item.Block1 = block1;
-        transaction.CreditReversal = item;
-        return this.submitReverse(transaction);
+        String clientTransactionId = getClientTxnId(details);
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsReversal().fromElementTree(response);
     }
 
     public HpsTransaction edit(int transactionId, BigDecimal amount) throws HpsException {
         return edit(transactionId, amount, BigDecimal.ZERO);
     }
 
-    public HpsTransaction edit(int transactionId, BigDecimal amount, BigDecimal gratuity) throws HpsException {
+    public HpsTransaction edit(Integer transactionId, BigDecimal amount, BigDecimal gratuity) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         if(transactionId <= 0) {
             throw new HpsInvalidRequestException("Invalid transaction ID.");
         }
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditTxnEditReqType item = new PosCreditTxnEditReqType();
+        Element transaction = Et.element("CreditTxnEdit");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
+        if(amount != null)
+            Et.subElement(transaction, "Amt").text(amount.toString());
 
-        item.GatewayTxnId = transactionId;
-        item.Amt = amount;
-        item.GratuityAmtInfo = gratuity;
+        if(gratuity != null)
+            Et.subElement(transaction, "GratuityAmtInfo").text(gratuity.toString());
 
-        transaction.CreditTxnEdit = item;
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
 
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-
-        this.processChargeGatewayResponse(resp, amount, "usd");
-        PosResponseVer10Header header = resp.Ver10.Header;
-
-        HpsTransaction result = new HpsTransaction(this.hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
-
-        return result;
+        return trans;
     }
 
-    public HpsTransaction voidTxn(int transactionId) throws HpsException {
+    public HpsTransaction voidTxn(Integer transactionId) throws HpsException {
         if(transactionId <= 0) {
             throw new HpsInvalidRequestException("Invalid transaction ID.");
         }
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditVoidReqType item = new PosCreditVoidReqType();
+        Element transaction = Et.element("CreditVoid");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
 
-        item.GatewayTxnId = transactionId;
-
-        transaction.CreditVoid = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-        PosResponseVer10Header header = resp.Ver10.Header;
-
-        HpsTransaction result = new HpsTransaction(this.hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
-
-        return result;
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
-    public HpsTransaction cpcEdit(int transactionId, HpsCpcData cpcData) throws HpsException {
+    public HpsTransaction cpcEdit(Integer transactionId, HpsCpcData cpcData) throws HpsException {
         if(transactionId <= 0) {
             throw new HpsInvalidRequestException("Invalid transaction ID.");
         }
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosCreditCPCEditReqType item = new PosCreditCPCEditReqType();
+        Element transaction = Et.element("CreditCPCEdit");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
+        transaction.append(hydrateCpcData(cpcData));
 
-        item.GatewayTxnId = transactionId;
-        item.CPCData = this.hydrateCpcData(cpcData);
-
-        transaction.CreditCPCEdit = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-        PosResponseVer10Header header = resp.Ver10.Header;
-
-        HpsTransaction result = new HpsTransaction(this.hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
-
-        return result;
+        ElementTree response = submitTransaction(transaction);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
-    private CardHolderDataType hydrateCardHolderData(HpsCardHolder cardHolder) {
-        CardHolderDataType result = new CardHolderDataType();
+    public ElementTree submitTransaction(Element transaction) throws HpsException {
+        return this.submitTransaction(transaction, null);
+    }
+    public ElementTree submitTransaction(Element transaction, String clientTransactionId) throws HpsException {
+        ElementTree rsp = this.doTransaction(transaction, clientTransactionId);
 
-        result.CardHolderFirstName = cardHolder.getFirstName();
-        result.CardHolderLastName = cardHolder.getLastName();
-        result.CardHolderEmail = cardHolder.getEmail();
-        result.CardHolderPhone = cardHolder.getPhone();
-        result.CardHolderAddr = cardHolder.getAddress().getAddress();
-        result.CardHolderCity = cardHolder.getAddress().getCity();
-        result.CardHolderState = cardHolder.getAddress().getState();
-        result.CardHolderZip = cardHolder.getAddress().getZip();
+        BigDecimal amount = null;
+        if(transaction.tag().equals("CreditSale") || transaction.tag().equals("CreditAuth"))
+            amount = new BigDecimal(transaction.getString("Amt"));
 
-        return result;
+        this.processGatewayResponse(rsp, transaction.tag(), amount);
+        this.processIssuerResponse(rsp, transaction.tag(), amount);
+
+        return rsp;
     }
 
-    private CardDataTypeManualEntry hydrateCardManualEntry(HpsCreditCard card) {
-        CardDataTypeManualEntry result = new CardDataTypeManualEntry();
-        String cvv = card.getCvv();
+    public void processIssuerResponse(ElementTree response, String expectedType, BigDecimal amount) throws HpsException {
+        Integer transactionId = response.get("Header").getInt("GatewayTxnId");
+        Element transaction = response.get(expectedType);
 
-        result.CardNbr = card.getNumber();
-        result.ExpMonth = card.getExpMonth();
-        result.ExpYear = card.getExpYear();
-        result.CVV2 = cvv;
-        result.CardPresent = Enums.booleanType.fromString("N");
-        result.ReaderPresent = Enums.booleanType.fromString("N");
+        if(transaction != null) {
+            String responseCode = transaction.getString("RspCode");
+            String responseText = transaction.getString("RspText");
 
-        return result;
-    }
-
-    private AdditionalTxnFieldsType hydrateAdditionalTxnFields(HpsTransactionDetails details) {
-        if (details == null) return null;
-
-        AdditionalTxnFieldsType result = new AdditionalTxnFieldsType();
-        if (details.getMemo() != null && details.getMemo().length() > 0) result.Description = details.getMemo();
-        if (details.getInvoiceNumber() != null && details.getInvoiceNumber().length() > 0)
-            result.InvoiceNbr = details.getInvoiceNumber();
-        if (details.getCustomerId() != null && details.getCustomerId().length() > 0)
-            result.CustomerID = details.getCustomerId();
-
-        return result;
-    }
-
-    private DirectMktDataType hydrateDirectMarketData(HpsDirectMarketData directMarketData) {
-        if(directMarketData == null) return null;
-
-        DirectMktDataType result = new DirectMktDataType();
-        result.DirectMktInvoiceNbr = directMarketData.getInvoiceNumber();
-        result.DirectMktShipDay = directMarketData.getShipDay();
-        result.DirectMktShipMonth = directMarketData.getShipMonth();
-
-        return result;
-    }
-
-    private CPCDataType hydrateCpcData(HpsCpcData cpcData) {
-        if(cpcData == null) return null;
-
-        CPCDataType result = new CPCDataType();
-        result.CardHolderPONbr = cpcData.getCardHolderPoNumber();
-        result.TaxType = cpcData.getTaxType();
-        result.TaxAmt = cpcData.getTaxAmount();
-
-        return result;
-    }
-
-    private SecureECommerceType hydrateSecureEcommerce(PaymentData3DS paymentData) {
-        if(paymentData == null) return null;
-
-        SecureECommerceType result = new SecureECommerceType();
-        result.TypeOfPaymentData = Enums.TypeOfPaymentDataType._3DSecure;
-
-        result.PaymentData = new SecureECommerceTypePaymentData();
-        result.PaymentData.value = paymentData.getOnlinePaymentCryptogram();
-        result.PaymentData.encoding = Enums.EncodingType.base64;
-
-        result.ECommerceIndicator = "5";
-
-        return result;
-    }
-
-    private HpsCharge submitCharge(PosRequestVer10Transaction transaction, BigDecimal amount, String currency) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        this.processChargeGatewayResponse(resp, amount, currency);
-
-        AuthRspStatusType creditSaleRsp = resp.Ver10.Transaction.CreditSale;
-        this.processChargeIssuerResponse(creditSaleRsp.RspCode, creditSaleRsp.RspText, resp.Ver10.Header.GatewayTxnId, amount, currency);
-
-        HpsCharge charge = new HpsCharge(this.hydrateTransactionHeader(resp.Ver10.Header));
-
-        charge.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        charge.setAuthorizedAmount(creditSaleRsp.AuthAmt);
-        charge.setAuthorizationCode(creditSaleRsp.AuthCode);
-        charge.setAvsResultCode(creditSaleRsp.AVSRsltCode);
-        charge.setAvsResultText(creditSaleRsp.AVSRsltText);
-        charge.setCardType(creditSaleRsp.CardType);
-        charge.setCpcIndicator(creditSaleRsp.CPCInd);
-        charge.setCvvResultCode(creditSaleRsp.CVVRsltCode);
-        charge.setCvvResultText(creditSaleRsp.CVVRsltText);
-        charge.setReferenceNumber(creditSaleRsp.RefNbr);
-        charge.setResponseCode(creditSaleRsp.RspCode);
-        charge.setResponseText(creditSaleRsp.RspText);
-
-        if (resp.Ver10.Header.TokenData != null) {
-            HpsTokenData tokenData = new HpsTokenData();
-            tokenData.setTokenRspCode(resp.Ver10.Header.TokenData.TokenRspCode);
-            tokenData.setTokenRspMsg(resp.Ver10.Header.TokenData.TokenRspMsg);
-            tokenData.setTokenValue(resp.Ver10.Header.TokenData.TokenValue);
-            charge.setTokenData(tokenData);
-        }
-
-        return charge;
-    }
-
-    private HpsAuthorization submitAuthorize(PosRequestVer10Transaction transaction, BigDecimal amount, String currency) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        this.processChargeGatewayResponse(resp, amount, currency);
-
-        PosResponseVer10Header header = resp.Ver10.Header;
-        AuthRspStatusType authResponse = resp.Ver10.Transaction.CreditAuth;
-
-        this.processChargeIssuerResponse(authResponse.RspCode, authResponse.RspText, header.GatewayTxnId, amount, currency);
-
-        HpsAuthorization auth = new HpsAuthorization(this.hydrateTransactionHeader(header));
-
-        auth.setTransactionID(header.GatewayTxnId);
-        auth.setAvsResultCode(authResponse.AVSRsltCode);
-        auth.setAvsResultText(authResponse.AVSRsltText);
-        auth.setCvvResultCode(authResponse.CVVRsltCode);
-        auth.setCvvResultText(authResponse.CVVRsltText);
-        auth.setAuthorizationCode(authResponse.AuthCode);
-        auth.setAuthorizedAmount(authResponse.AuthAmt);
-        auth.setReferenceNumber(authResponse.RefNbr);
-        auth.setResponseCode(authResponse.RspCode);
-        auth.setResponseText(authResponse.RspText);
-        auth.setCardType(authResponse.CardType);
-        auth.setCpcIndicator(authResponse.CPCInd);
-
-        if (header.TokenData != null) {
-            HpsTokenData tokenData = new HpsTokenData();
-            tokenData.setTokenRspCode(header.TokenData.TokenRspCode);
-            tokenData.setTokenRspMsg(header.TokenData.TokenRspMsg);
-            tokenData.setTokenValue(header.TokenData.TokenValue);
-            auth.setTokenData(tokenData);
-        }
-
-        return auth;
-    }
-
-    private HpsRefund submitRefund(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosResponseVer10Header header = resp.Ver10.Header;
-        HpsRefund refund = new HpsRefund(this.hydrateTransactionHeader(header));
-        refund.setTransactionID(header.GatewayTxnId);
-        refund.setResponseCode("00");
-        refund.setResponseText("");
-
-        return refund;
-    }
-
-    private HpsReversal submitReverse(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosResponseVer10Header header = resp.Ver10.Header;
-        AuthRspStatusType respReversal = resp.Ver10.Transaction.CreditReversal;
-        HpsReversal reversal = new HpsReversal(this.hydrateTransactionHeader(header));
-
-        reversal.setTransactionID(header.GatewayTxnId);
-        reversal.setAvsResultCode(respReversal.AVSRsltCode);
-        reversal.setAvsResultText(respReversal.AVSRsltText);
-        reversal.setCpcIndicator(respReversal.CPCInd);
-        reversal.setCvvResultCode(respReversal.CVVRsltCode);
-        reversal.setCvvResultText(respReversal.CVVRsltText);
-        reversal.setReferenceNumber(respReversal.RefNbr);
-        reversal.setResponseCode(respReversal.RspCode);
-        reversal.setResponseText(respReversal.RspText);
-
-        return reversal;
-    }
-
-    private HpsAccountVerify submitVerify(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = this.doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        AuthRspStatusType creditVerifyRsp = resp.Ver10.Transaction.CreditAccountVerify;
-        HpsAccountVerify accountVerify = new HpsAccountVerify(this.hydrateTransactionHeader(resp.Ver10.Header));
-
-        accountVerify.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        accountVerify.setAvsResultCode(creditVerifyRsp.AVSRsltCode);
-        accountVerify.setAvsResultText(creditVerifyRsp.AVSRsltText);
-        accountVerify.setReferenceNumber(creditVerifyRsp.RefNbr);
-        accountVerify.setResponseCode(creditVerifyRsp.RspCode);
-        accountVerify.setResponseText(creditVerifyRsp.RspText);
-        accountVerify.setCardType(creditVerifyRsp.CardType);
-        accountVerify.setCpcIndicator(creditVerifyRsp.CPCInd);
-        accountVerify.setCvvResultCode(creditVerifyRsp.CVVRsltCode);
-        accountVerify.setCvvResultText(creditVerifyRsp.CVVRsltText);
-        accountVerify.setAuthorizationCode(creditVerifyRsp.AuthCode);
-        accountVerify.setAuthorizedAmount(creditVerifyRsp.AuthAmt);
-
-        if(resp.Ver10.Header.TokenData != null) {
-            HpsTokenData tokenData = new HpsTokenData();
-            tokenData.setTokenRspCode(resp.Ver10.Header.TokenData.TokenRspCode);
-            tokenData.setTokenRspMsg(resp.Ver10.Header.TokenData.TokenRspMsg);
-            tokenData.setTokenValue(resp.Ver10.Header.TokenData.TokenValue);
-            accountVerify.setTokenData(tokenData);
-        }
-
-        HpsIssuerResponseValidation.checkIssuerResponse(accountVerify.getTransactionID(),
-                accountVerify.getResponseCode(), accountVerify.getResponseText());
-
-        return accountVerify;
-    }
-
-    private void processChargeGatewayResponse(PosResponse resp, BigDecimal amount, String currency) throws HpsException {
-        if(resp.Ver10.Header.GatewayRspCode == 0) return;
-        if (resp.Ver10.Header.GatewayRspCode == 30) {
-            try {
-                this.reverse(resp.Ver10.Header.GatewayTxnId, amount, currency, null);
-            } catch (Exception e) {
-                throw new HpsGatewayException(HpsGatewayExceptionCodes.GatewayTimeoutReversalError,
-                        "Error occurred while reversing a charge due to HPS gateway time-out.", e);
-            }
-        }
-
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-    }
-
-    private void processChargeIssuerResponse(String responseCode, String responseText, int transactionId, BigDecimal amount, String currency) throws HpsException {
-        if (responseCode.equals("91")) {
-            try {
-                // try to reverse the transaction
-                this.reverse(transactionId, amount, currency, null);
-            } catch (HpsGatewayException e) {
-                // if the transaction wasn't found; throw the original timeout exception.
-                if (e.getDetails().getGatewayResponseCode() == 3) {
-                    HpsIssuerResponseValidation.checkIssuerResponse(transactionId, responseCode, responseText);
+            if(responseCode != null && !responseCode.equals("")) {
+                if(responseCode.equals("91")){
+                    try{
+                        this.reverse(transactionId, amount, "usd");
+                    }
+                    catch(HpsGatewayException e) {
+                        if(e.getDetails().getGatewayResponseCode() == 3)
+                            HpsIssuerResponseValidation.checkIssuerResponse(transactionId, responseCode, responseText);
+                        throw new HpsCreditException(transactionId, HpsExceptionCodes.IssuerTimeoutReversal, "Error occurred while reversing a charge due to an issuer timeout.", e);
+                    }
+                    catch(HpsException e) {
+                        throw new HpsCreditException(transactionId, HpsExceptionCodes.IssuerTimeoutReversal, "Error occurred while reversing a charge due to an issuer timeout.", e);
+                    }
                 }
-
-                throw new HpsIssuerException(transactionId, HpsIssuerExceptionCodes.IssuerTimeoutReversalError,
-                        "Error occurred while reversing a charge due to HPS issuer time-out.", e);
-            } catch (Exception e) {
-                throw new HpsIssuerException(transactionId, HpsIssuerExceptionCodes.IssuerTimeoutReversalError,
-                        "Error occurred while reversing a charge due to HPS issuer time-out.", e);
+                HpsIssuerResponseValidation.checkIssuerResponse(transactionId, responseCode, responseText);
             }
         }
+    }
 
-        HpsIssuerResponseValidation.checkIssuerResponse(transactionId, responseCode, responseText);
+    public void processGatewayResponse(ElementTree response, String expectedType, BigDecimal amount) throws HpsException {
+        String responseCode = response.get("Header").getString("GatewayRspCode");
+        Integer transactionId = response.get("Header").getInt("GatewayTxnId");
+        if(responseCode.equals("00"))
+            return;
+
+        if(responseCode.equals("30")){
+            try{
+                this.reverse(transactionId, amount, "usd");
+            }
+            catch(HpsException e) {
+                throw new HpsGatewayException(HpsExceptionCodes.GatewayTimeoutReversalError, "Error occurred while reversing a charge due to a gateway timeout.", e);
+            }
+        }
+        HpsGatewayResponseValidation.checkGatewayResponse(response, expectedType);
     }
 }

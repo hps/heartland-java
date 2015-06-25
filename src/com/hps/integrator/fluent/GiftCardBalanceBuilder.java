@@ -1,51 +1,40 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.gift.HpsGiftCard;
-import com.hps.integrator.entities.gift.HpsGiftCardBalance;
+import com.hps.integrator.entities.gift.HpsGiftCardResponse;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentGiftService;
 
-public class GiftCardBalanceBuilder extends GatewayTransactionBuilder<GiftCardBalanceBuilder, HpsGiftCardBalance> {
-    public GiftCardBalanceBuilder(IHpsServicesConfig config, HpsGiftCard giftCard) {
-        super(config);
+public class GiftCardBalanceBuilder extends HpsBuilderAbstract<HpsFluentGiftService, HpsGiftCardResponse> {
+    HpsGiftCard card;
 
-        transaction = new PosRequestVer10Transaction();
-        PosGiftCardBalanceReqType item = new PosGiftCardBalanceReqType();
-        GiftCardBalanceReqBlock1Type block1 = new GiftCardBalanceReqBlock1Type();
-
-        block1.CardData = hydrateGiftCardData(giftCard);
-
-        item.Block1 = block1;
-        transaction.GiftCardBalance = item;
-    }
-
-    @Override
-    protected GiftCardBalanceBuilder getBuilder() {
+    public GiftCardBalanceBuilder withCard(HpsGiftCard value) {
+        this.card = value;
         return this;
     }
 
-    @Override
-    public HpsGiftCardBalance execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardBalanceRspType balanceRsp = resp.Ver10.Transaction.GiftCardBalance;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(balanceRsp.RspCode), balanceRsp.RspText);
-
-        HpsGiftCardBalance balanceResult = new HpsGiftCardBalance(hydrateTransactionHeader(resp.Ver10.Header));
-        balanceResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        balanceResult.setAuthorizationCode(balanceRsp.AuthCode);
-        balanceResult.setBalanceAmount(balanceRsp.BalanceAmt);
-        balanceResult.setPointsBalanceAmount(balanceRsp.PointsBalanceAmt);
-        balanceResult.setRewards(balanceRsp.Rewards);
-        balanceResult.setNotes(balanceRsp.Notes);
-        balanceResult.setResponseCode(Integer.toString(balanceRsp.RspCode));
-        balanceResult.setResponseText(balanceRsp.RspText);
-
-        return balanceResult;
+    public GiftCardBalanceBuilder(HpsFluentGiftService service) {
+        super(service);
     }
+
+    @Override
+    public HpsGiftCardResponse execute() throws HpsException {
+        super.execute();
+
+        Element transaction = Et.element("GiftCardBalance");
+        Element block1 = Et.subElement(transaction, "Block1");
+        block1.append(service.hydrateGiftCardData(card));
+
+        ElementTree response = service.submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
+    }
+
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("cardIsNotNull", "Card is required."));
+    }
+
+    private boolean cardIsNotNull() { return this.card != null; }
 }

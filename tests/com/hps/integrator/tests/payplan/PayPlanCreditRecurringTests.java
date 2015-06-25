@@ -35,9 +35,4 @@ public class PayPlanCreditRecurringTests {
 
         this.service = new HpsCreditService(config);
     }
-
-    @Test
-    public void OneTimeWithCardData() {
-
-    }
 }

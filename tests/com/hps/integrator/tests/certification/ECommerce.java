@@ -1,6 +1,5 @@
 package com.hps.integrator.tests.certification;
 
-import PosGateway.Exchange.Hps.Enums;
 import com.hps.integrator.entities.HpsAddress;
 import com.hps.integrator.entities.HpsDirectMarketData;
 import com.hps.integrator.entities.HpsTrackData;
@@ -9,27 +8,43 @@ import com.hps.integrator.entities.batch.HpsBatch;
 import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.entities.gift.*;
 import com.hps.integrator.fluent.CreditChargeBuilder;
-import com.hps.integrator.fluent.CreditChargePaymentTypeBuilder;
 import com.hps.integrator.infrastructure.HpsException;
+import com.hps.integrator.infrastructure.HpsExceptionCodes;
 import com.hps.integrator.infrastructure.HpsGatewayException;
-import com.hps.integrator.infrastructure.HpsGatewayExceptionCodes;
+import com.hps.integrator.infrastructure.emums.GiftCardAliasAction;
+import com.hps.integrator.infrastructure.emums.TaxTypeType;
 import com.hps.integrator.services.HpsBatchService;
-import com.hps.integrator.services.HpsCreditService;
-import com.hps.integrator.services.HpsGiftCardService;
 import com.hps.integrator.services.HpsServicesConfig;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
+import com.hps.integrator.services.fluent.HpsFluentGiftService;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.fail;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ECommerce {
-    private HpsBatchService _batchService;
-    private HpsCreditService _creditService;
-    private HpsGiftCardService _giftService;
+    private HpsBatchService batchService;
+    private HpsFluentCreditService creditService;
+    private HpsFluentGiftService giftService;
     private boolean _useTokens = true;
+    
+    private static String visaToken;
+    private static String masterCardToken;
+    private static String discoverToken;
+    private static String amexToken;
+    
+    private static Integer test10TransactionId;
+    private static Integer test20TransactionId;
+    private static Integer test39TransactionId;
+    private static Integer test52TransactionId;
+    private static Integer test53TransactionId;
 
     public ECommerce() throws HpsException {
         HpsServicesConfig config = new HpsServicesConfig();
@@ -38,30 +53,25 @@ public class ECommerce {
         config.setDeveloperId("012345");
         config.setVersionNumber("0001");
 
-        _batchService = new HpsBatchService(config);
-        _creditService = new HpsCreditService(config);
-        _giftService = new HpsGiftCardService(config);
+        batchService = new HpsBatchService(config);
+        creditService = new HpsFluentCreditService(config, true);
+        giftService = new HpsFluentGiftService(config, true);
     }
 
     // CARD VERIFY
 
     @Test
-    @SuppressWarnings("SpellCheckingInspection")
-    public void test_000_close_batch() throws HpsException {
-        System.out.println("\033[32mclosing open batch...");
-
-        try {
-            HpsBatch batch = _batchService.close().execute();
-            assertNotEquals(batch, null);
-
-            System.out.printf("\033[32mbatch id: %d\n", batch.getId());
-            System.out.printf("\033[32msequence number: %d\n", batch.getSequenceNumber());
-        } catch (HpsGatewayException ex) {
-            if (ex.getCode() != HpsGatewayExceptionCodes.NoOpenBatch) {
-                throw ex;
-            } else {
-                System.out.println("\033[33mno open batch found");
-            }
+    public void test_000_CloseBatch() {
+        try{
+            HpsBatch response = this.batchService.closeBatch();
+            if(response == null)
+                fail("Response is null");
+            System.out.println(String.format("Batch ID: %s", response.getId()));
+            System.out.println(String.format("Sequence Number: %s", response.getSequenceNumber()));
+        }
+        catch(HpsException exc){
+            if (!exc.getMessage().equals("Transaction was rejected because it requires a batch to be open."))
+                fail(exc.getMessage());
         }
     }
 
@@ -69,9 +79,14 @@ public class ECommerce {
 
     @Test
     public void test_001_verify_visa() throws HpsException {
-        HpsAccountVerify response = _creditService.verify()
-                .withCard(TestData.visaCard(false))
-                .withRequestMultiuseToken(_useTokens)
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        
+        HpsAccountVerify response = creditService.verify()
+                .withCard(card)
+                .withRequestMultiUseToken(_useTokens)
                 .execute();
 
         assertNotEquals(null, response);
@@ -80,9 +95,14 @@ public class ECommerce {
 
     @Test
     public void test_002_verify_master_card() throws HpsException {
-        HpsAccountVerify response = _creditService.verify()
-                .withCard(TestData.masterCard(false))
-                .withRequestMultiuseToken(_useTokens)
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+
+        HpsAccountVerify response = creditService.verify()
+                .withCard(card)
+                .withRequestMultiUseToken(_useTokens)
                 .execute();
 
         assertNotEquals(null, response);
@@ -92,13 +112,19 @@ public class ECommerce {
     @Test
     public void test_003_verify_discover() throws HpsException {
         HpsCardHolder cardHolder = new HpsCardHolder();
-        cardHolder.setAddress(new HpsAddress());
-        cardHolder.getAddress().setZip("75024");
+        HpsAddress address = new HpsAddress();
+        address.setZip("75024");
+        cardHolder.setAddress(address);
 
-        HpsAccountVerify response = _creditService.verify()
-                .withCard(TestData.discoverCard(false))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6011000990156527");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+
+        HpsAccountVerify response = creditService.verify()
+                .withCard(card)
                 .withCardHolder(cardHolder)
-                .withRequestMultiuseToken(_useTokens)
+                .withRequestMultiUseToken(_useTokens)
                 .execute();
 
         assertNotEquals(null, response);
@@ -113,10 +139,15 @@ public class ECommerce {
         cardHolder.setAddress(new HpsAddress());
         cardHolder.getAddress().setZip("75024");
 
-        HpsAccountVerify response = _creditService.verify()
-                .withCard(TestData.amexCard(false))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+
+        HpsAccountVerify response = creditService.verify()
+                .withCard(card)
                 .withCardHolder(cardHolder)
-                .withRequestMultiuseToken(_useTokens)
+                .withRequestMultiUseToken(_useTokens)
                 .execute();
 
         assertNotEquals(null, response);
@@ -127,8 +158,13 @@ public class ECommerce {
 
     @Test
     public void test_005_balance_inquiry_visa() throws HpsException {
-        HpsAuthorization response = _creditService.prePaidBalanceInquiry()
-                .withCard(TestData.visaCard(false))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+
+        HpsAuthorization response = creditService.prepaidBalanceInquiry()
+                .withCard(card)
                 .execute();
 
         assertNotEquals(null, response);
@@ -144,14 +180,20 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization response = _creditService.charge(BigDecimal.valueOf(13.01))
-                .withCard(TestData.visaCard(false))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+
+        HpsAuthorization response = creditService.charge(BigDecimal.valueOf(13.01))
+                .withCard(card)
                 .withCardHolder(cardHolder)
-                .withRequestMultiuseToken(true)
+                .withRequestMultiUseToken(true)
                 .execute();
 
         assertNotEquals(null, response);
         assertEquals("00", response.getResponseCode());
+        visaToken = response.getTokenData().getTokenValue();
     }
 
     @Test
@@ -161,14 +203,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization response = _creditService.charge(BigDecimal.valueOf(13.02))
-                .withCard(TestData.masterCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization response = creditService.charge(BigDecimal.valueOf(13.02))
+                .withCard(card)
                 .withCardHolder(cardHolder)
-                .withRequestMultiuseToken(true)
+                .withRequestMultiUseToken(true)
                 .execute();
 
         assertNotEquals(null, response);
         assertEquals("00", response.getResponseCode());
+        masterCardToken = response.getTokenData().getTokenValue();
     }
 
     @Test
@@ -178,14 +227,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("750241234");
 
-        HpsAuthorization response = _creditService.charge(BigDecimal.valueOf(13.03))
-                .withCard(TestData.discoverCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6011000990156527");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization response = creditService.charge(BigDecimal.valueOf(13.03))
+                .withCard(card)
                 .withCardHolder(cardHolder)
-                .withRequestMultiuseToken(true)
+                .withRequestMultiUseToken(true)
                 .execute();
 
         assertNotEquals(null, response);
         assertEquals("00", response.getResponseCode());
+        discoverToken = response.getTokenData().getTokenValue();
     }
 
     @Test
@@ -195,14 +251,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization response = _creditService.charge(BigDecimal.valueOf(13.04))
-                .withCard(TestData.amexCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
+        HpsAuthorization response = creditService.charge(BigDecimal.valueOf(13.04))
+                .withCard(card)
                 .withCardHolder(cardHolder)
-                .withRequestMultiuseToken(true)
+                .withRequestMultiUseToken(true)
                 .execute();
 
         assertNotEquals(null, response);
         assertEquals("00", response.getResponseCode());
+        amexToken = response.getTokenData().getTokenValue();
     }
 
     // CREDIT SALE
@@ -214,16 +277,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        CreditChargePaymentTypeBuilder typeBuilder = _creditService.charge(BigDecimal.valueOf(17.01));
-        CreditChargeBuilder builder;
+        CreditChargeBuilder builder = creditService.charge(BigDecimal.valueOf(17.01));
 
         if(_useTokens) {
-            builder = typeBuilder.withToken(TestData.visaMultiUseToken(TestData.Industry.ecommerce));
+            builder.withToken(visaToken);
         } else {
-            builder = typeBuilder.withCard(TestData.visaCard(true));
+            builder.withCard(card);
         }
 
         HpsCharge chargeResponse = builder
@@ -233,12 +301,7 @@ public class ECommerce {
 
         assertNotEquals(null, chargeResponse);
         assertEquals("00", chargeResponse.getResponseCode());
-
-        // TEST 35 ONLINE VOID
-        HpsTransaction voidResponse = _creditService.voidTransaction(chargeResponse.getTransactionID()).execute();
-
-        assertNotEquals(null, voidResponse);
-        assertEquals("00", voidResponse.getResponseCode());
+        test10TransactionId = chargeResponse.getTransactionID();
     }
 
     @Test
@@ -248,16 +311,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        CreditChargePaymentTypeBuilder typeBuilder = _creditService.charge(BigDecimal.valueOf(17.02));
-        CreditChargeBuilder builder;
-
+        CreditChargeBuilder builder = creditService.charge(BigDecimal.valueOf(17.02));
+        
         if(_useTokens) {
-            builder = typeBuilder.withToken(TestData.masterCardMultiUseToken(TestData.Industry.ecommerce));
+            builder.withToken(masterCardToken);
         } else {
-            builder = typeBuilder.withCard(TestData.masterCard(true));
+            builder.withCard(card);
         }
 
         HpsCharge chargeResponse = builder
@@ -276,16 +344,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("750241234");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6011000990156527");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        CreditChargePaymentTypeBuilder typeBuilder = _creditService.charge(BigDecimal.valueOf(17.03));
-        CreditChargeBuilder builder;
+        CreditChargeBuilder builder = creditService.charge(BigDecimal.valueOf(17.03));
 
         if(_useTokens) {
-            builder = typeBuilder.withToken(TestData.discoverMultiUseToken(TestData.Industry.ecommerce));
+            builder.withToken(discoverToken);
         } else {
-            builder = typeBuilder.withCard(TestData.discoverCard(true));
+            builder.withCard(card);
         }
 
         HpsCharge response = builder
@@ -304,16 +377,21 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        CreditChargePaymentTypeBuilder typeBuilder = _creditService.charge(BigDecimal.valueOf(17.04));
-        CreditChargeBuilder builder;
+        CreditChargeBuilder builder = creditService.charge(BigDecimal.valueOf(17.04));
 
         if(_useTokens) {
-            builder = typeBuilder.withToken(TestData.amexMultiUseToken(TestData.Industry.ecommerce));
+            builder.withToken(amexToken);
         } else {
-            builder = typeBuilder.withCard(TestData.amexCard(true));
+            builder.withCard(card);
         }
 
         HpsCharge response = builder
@@ -332,11 +410,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("750241234");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("3566007770007321");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsCharge response = _creditService.charge(BigDecimal.valueOf(17.05))
-                .withCard(TestData.jcbCard(true))
+        HpsCharge response = creditService.charge(BigDecimal.valueOf(17.05))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .execute();
@@ -354,11 +438,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsAuthorization authResponse = _creditService.authorize(BigDecimal.valueOf(17.06))
-                .withCard(TestData.visaCard(true))
+        HpsAuthorization authResponse = creditService.authorize(BigDecimal.valueOf(17.06))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .execute();
@@ -367,7 +457,7 @@ public class ECommerce {
         assertEquals("00", authResponse.getResponseCode());
 
         // test 015b Capture/AddToBatch
-        HpsTransaction captureResponse = _creditService.capture(authResponse.getTransactionID()).execute();
+        HpsTransaction captureResponse = creditService.capture(authResponse.getTransactionID()).execute();
 
         assertNotEquals(null, captureResponse);
         assertEquals("00", captureResponse.getResponseCode());
@@ -380,11 +470,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("750241234");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsAuthorization authResponse = _creditService.authorize(BigDecimal.valueOf(17.07))
-                .withCard(TestData.masterCard(true))
+        HpsAuthorization authResponse = creditService.authorize(BigDecimal.valueOf(17.07))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .execute();
@@ -393,7 +489,7 @@ public class ECommerce {
         assertEquals("00", authResponse.getResponseCode());
 
         // test 016b Capture/AddToBatch
-        HpsTransaction captureResponse = _creditService.capture(authResponse.getTransactionID()).execute();
+        HpsTransaction captureResponse = creditService.capture(authResponse.getTransactionID()).execute();
 
         assertNotEquals(null, captureResponse);
         assertEquals("00", captureResponse.getResponseCode());
@@ -406,11 +502,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6011000990156527");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsAuthorization authResponse = _creditService.authorize(BigDecimal.valueOf(17.08))
-                .withCard(TestData.discoverCard(true))
+        HpsAuthorization authResponse = creditService.authorize(BigDecimal.valueOf(17.08))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .execute();
@@ -431,11 +533,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsAuthorization response = _creditService.charge(BigDecimal.valueOf(130))
-                .withCard(TestData.visaCard(true))
+        HpsAuthorization response = creditService.charge(BigDecimal.valueOf(130))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .withAllowPartialAuth(true)
@@ -455,11 +563,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6011000990156527");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsAuthorization response = _creditService.charge(BigDecimal.valueOf(145))
-                .withCard(TestData.discoverCard(true))
+        HpsAuthorization response = creditService.charge(BigDecimal.valueOf(145))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .withAllowPartialAuth(true)
@@ -479,11 +593,17 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(155))
-                .withCard(TestData.masterCard(true))
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(155))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .withAllowPartialAuth(true)
@@ -494,12 +614,7 @@ public class ECommerce {
 
         assertNotEquals(null, chargeResponse.getAuthorizedAmount());
         assertEquals(BigDecimal.valueOf(100).setScale(2, BigDecimal.ROUND_CEILING), chargeResponse.getAuthorizedAmount());
-
-        // TEST 36 ONLINE VOID
-        HpsTransaction voidResponse = _creditService.voidTransaction(chargeResponse.getTransactionID()).execute();
-
-        assertNotEquals(null, voidResponse);
-        assertEquals("00", voidResponse.getResponseCode());
+        test20TransactionId = chargeResponse.getTransactionID();
     }
 
     // LEVEL II CORPORATE PURCHASE CARD
@@ -511,8 +626,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860 Dallas Pkwy");
         cardHolder.getAddress().setZip("750241234");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(112.34))
-                .withCard(TestData.visaCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(112.34))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -523,9 +644,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
-        cpcData.setTaxType(Enums.taxTypeType.NOTUSED);
+        cpcData.setTaxType(TaxTypeType.NotUsed);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -540,8 +661,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("750241234");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(112.34))
-                .withCard(TestData.visaCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(112.34))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withAllowDuplicates(true)
                 .withCpcReq(true)
@@ -552,10 +679,10 @@ public class ECommerce {
         assertEquals("B", chargeResponse.getCpcIndicator());
 
         HpsCpcData cpcData = new HpsCpcData();
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
         cpcData.setTaxAmount(BigDecimal.valueOf(1).setScale(2, BigDecimal.ROUND_CEILING));
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -570,8 +697,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(123.45))
-                .withCard(TestData.visaCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(123.45))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -581,9 +714,9 @@ public class ECommerce {
         assertEquals(chargeResponse.getCpcIndicator(), "R");
 
         HpsCpcData cpcData = new HpsCpcData();
-        cpcData.setTaxType(Enums.taxTypeType.TAXEXEMPT);
+        cpcData.setTaxType(TaxTypeType.TaxExempt);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -598,8 +731,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(134.56))
-                .withCard(TestData.visaCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(134.56))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -610,10 +749,10 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
         cpcData.setTaxAmount(BigDecimal.valueOf(1).setScale(2, BigDecimal.ROUND_CEILING));
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -628,8 +767,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.06))
-                .withCard(TestData.masterCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.06))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -640,9 +785,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
-        cpcData.setTaxType(Enums.taxTypeType.NOTUSED);
+        cpcData.setTaxType(TaxTypeType.NotUsed);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -657,8 +802,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.07))
-                .withCard(TestData.masterCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.07))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -669,9 +820,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setTaxAmount(BigDecimal.valueOf(1).setScale(2, BigDecimal.ROUND_CEILING));
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -686,8 +837,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.08))
-                .withCard(TestData.masterCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.08))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -699,9 +856,9 @@ public class ECommerce {
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
         cpcData.setTaxAmount(BigDecimal.valueOf(1).setScale(2, BigDecimal.ROUND_CEILING));
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -716,8 +873,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.09))
-                .withCard(TestData.masterCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.09))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -728,9 +891,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
-        cpcData.setTaxType(Enums.taxTypeType.TAXEXEMPT);
+        cpcData.setTaxType(TaxTypeType.TaxExempt);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -745,8 +908,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.10))
-                .withCard(TestData.amexCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.10))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -757,9 +926,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
-        cpcData.setTaxType(Enums.taxTypeType.NOTUSED);
+        cpcData.setTaxType(TaxTypeType.NotUsed);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -774,8 +943,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("750241234");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.11))
-                .withCard(TestData.amexCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.11))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -786,9 +961,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setTaxAmount(BigDecimal.valueOf(1).setScale(2, BigDecimal.ROUND_CEILING));
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -803,8 +978,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.12))
-                .withCard(TestData.amexCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.12))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -816,9 +997,9 @@ public class ECommerce {
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
         cpcData.setTaxAmount(BigDecimal.valueOf(1).setScale(2, BigDecimal.ROUND_CEILING));
-        cpcData.setTaxType(Enums.taxTypeType.SALESTAX);
+        cpcData.setTaxType(TaxTypeType.SalesTax);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -833,8 +1014,14 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsAuthorization chargeResponse = _creditService.charge(BigDecimal.valueOf(111.13))
-                .withCard(TestData.amexCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("372700699251018");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("1234");
+
+        HpsAuthorization chargeResponse = creditService.charge(BigDecimal.valueOf(111.13))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withCpcReq(true)
                 .execute();
@@ -845,9 +1032,9 @@ public class ECommerce {
 
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setCardHolderPoNumber("9876543210");
-        cpcData.setTaxType(Enums.taxTypeType.TAXEXEMPT);
+        cpcData.setTaxType(TaxTypeType.TaxExempt);
 
-        HpsTransaction cpcResponse = _creditService.cpcEdit(chargeResponse.getTransactionID())
+        HpsTransaction cpcResponse = creditService.cpcEdit(chargeResponse.getTransactionID())
                 .withCpcData(cpcData)
                 .execute();
 
@@ -862,8 +1049,14 @@ public class ECommerce {
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsTransaction response = _creditService.offlineCharge(BigDecimal.valueOf(17.10))
-                .withCard(TestData.visaCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsTransaction response = creditService.offlineCharge(BigDecimal.valueOf(17.10))
+                .withCard(card)
                 .withOfflineAuthCode("654321")
                 .withDirectMarketData(directMarketData)
                 .execute();
@@ -877,8 +1070,14 @@ public class ECommerce {
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsTransaction response = _creditService.offlineAuth(BigDecimal.valueOf(17.10))
-                .withCard(TestData.visaCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4012002000060016");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsTransaction response = creditService.offlineAuth(BigDecimal.valueOf(17.10))
+                .withCard(card)
                 .withOfflineAuthCode("654321")
                 .withDirectMarketData(directMarketData)
                 .withAllowDuplicates(true)
@@ -895,8 +1094,14 @@ public class ECommerce {
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsTransaction response = _creditService.refund(BigDecimal.valueOf(15.15))
-                .withCard(TestData.masterCard(true))
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("5473500000000014");
+        card.setExpMonth(12);
+        card.setExpYear(2015);
+        card.setCvv("123");
+
+        HpsTransaction response = creditService.refund(BigDecimal.valueOf(15.15))
+                .withCard(card)
                 .withDirectMarketData(directMarketData)
                 .execute();
 
@@ -906,8 +1111,21 @@ public class ECommerce {
 
     // ONLINE VOID / REVERSAL
 
-    // test_035_void_test_10: SEE TEST 10
-    // test_036_void_test_20: SEE TEST 20
+    @Test
+    public void test_035_VoidTest10() throws HpsException {
+        HpsTransaction voidResponse = creditService.creditVoid(test10TransactionId).execute();
+
+        assertNotEquals(null, voidResponse);
+        assertEquals("00", voidResponse.getResponseCode());
+    }
+    
+    @Test
+    public void test_036_VoidTest20() throws HpsException {
+        HpsTransaction voidResponse = creditService.creditVoid(test20TransactionId).execute();
+
+        assertNotEquals(null, voidResponse);
+        assertEquals("00", voidResponse.getResponseCode());
+    }
 
     // ONE CARD - GSB CARD FUNCTIONS
 
@@ -920,8 +1138,13 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
-        HpsTransaction response = _creditService.prePaidBalanceInquiry()
-                .withCard(TestData.gsbCardECommerce())
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6277220572999800");
+        card.setExpMonth(12);
+        card.setExpYear(2049);
+
+        HpsTransaction response = creditService.prepaidBalanceInquiry()
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .execute();
 
@@ -934,9 +1157,9 @@ public class ECommerce {
     @Test
     public void test_038_add_value_gsb() throws HpsException {
         HpsTrackData trackData = new HpsTrackData();
-        trackData.setValue("%B6277220330000248^ TEST CARD^49121010000000000694?;6277220330000248=49121010000000000694?");
+        trackData.setValue("%B6277220572999800^   /                         ^49121010557010000016000000?F;6277220572999800=49121010557010000016?");
 
-        HpsTransaction response = _creditService.prePaidAddValue(BigDecimal.valueOf(15.00))
+        HpsTransaction response = creditService.prepaidAddValue(BigDecimal.valueOf(15.00))
                 .withTrackData(trackData)
                 .execute();
 
@@ -953,23 +1176,23 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6277220572999800");
+        card.setExpMonth(12);
+        card.setExpYear(2049);
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsCharge chargeResponse = _creditService.charge(BigDecimal.valueOf(2.05))
-                .withCard(TestData.gsbCardECommerce())
+        HpsCharge chargeResponse = creditService.charge(BigDecimal.valueOf(2.05))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .execute();
 
         assertNotEquals(null, chargeResponse);
         assertEquals("00", chargeResponse.getResponseCode());
-
-        // VOID TRANSACTION
-
-        HpsTransaction voidResponse = _creditService.voidTransaction(chargeResponse.getTransactionID()).execute();
-        assertNotEquals(null, voidResponse);
-        assertEquals("00", voidResponse.getResponseCode());
+        test39TransactionId = chargeResponse.getTransactionID();
     }
 
     @Test
@@ -979,11 +1202,16 @@ public class ECommerce {
         cardHolder.getAddress().setAddress("6860");
         cardHolder.getAddress().setZip("75024");
 
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("6277220572999800");
+        card.setExpMonth(12);
+        card.setExpYear(2049);
+
         HpsDirectMarketData directMarketData = new HpsDirectMarketData();
         directMarketData.setInvoiceNumber("123456");
 
-        HpsCharge response = _creditService.charge(BigDecimal.valueOf(2.10))
-                .withCard(TestData.gsbCardECommerce())
+        HpsCharge response = creditService.charge(BigDecimal.valueOf(2.10))
+                .withCard(card)
                 .withCardHolder(cardHolder)
                 .withDirectMarketData(directMarketData)
                 .execute();
@@ -994,7 +1222,12 @@ public class ECommerce {
 
     // ONLINE VOID / REVERSAL
 
-    // test_041_void_gsb: SEE TEST 39
+    @Test
+    public void test_041_VoidGsb() throws HpsException {
+        HpsTransaction voidResponse = creditService.creditVoid(test39TransactionId).execute();
+        assertNotEquals(null, voidResponse);
+        assertEquals("00", voidResponse.getResponseCode());
+    }
 
     // HMS GIFT - REWARDS
 
@@ -1002,14 +1235,20 @@ public class ECommerce {
 
     @Test
     public void test_042_activate_gift_1() throws HpsException {
-        HpsGiftCardActivate response = _giftService.activate(BigDecimal.valueOf(6.00), TestData.giftCard1()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+        
+        HpsGiftCardResponse response = giftService.activate(BigDecimal.valueOf(6.00)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_043_activate_gift_2() throws HpsException {
-        HpsGiftCardActivate response = _giftService.activate(BigDecimal.valueOf(7.00), TestData.giftCard2()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+        
+        HpsGiftCardResponse response = giftService.activate(BigDecimal.valueOf(7.00)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
@@ -1018,14 +1257,20 @@ public class ECommerce {
 
     @Test
     public void test_044_add_value_gift_1() throws HpsException {
-        HpsGiftCardAddValue response = _giftService.addValue(BigDecimal.valueOf(8.00), TestData.giftCard1()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardResponse response = giftService.addValue(BigDecimal.valueOf(8.00)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_045_add_value_gift_2() throws HpsException {
-        HpsGiftCardAddValue response = _giftService.addValue(BigDecimal.valueOf(8.00), TestData.giftCard2()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.addValue(BigDecimal.valueOf(8.00)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
@@ -1034,7 +1279,10 @@ public class ECommerce {
 
     @Test
     public void test_046_balance_inquiry_gift_1() throws HpsException {
-        HpsGiftCardBalance response = _giftService.balance(TestData.giftCard1()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardResponse response = giftService.balance().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
         assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_CEILING), response.getBalanceAmount());
@@ -1042,7 +1290,10 @@ public class ECommerce {
 
     @Test
     public void test_047_balance_inquiry_gift_2() throws HpsException {
-        HpsGiftCardBalance response = _giftService.balance(TestData.giftCard2()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.balance().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
         assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_CEILING), response.getBalanceAmount());
@@ -1052,7 +1303,13 @@ public class ECommerce {
 
     @Test
     public void test_048_replace_gift_1() throws HpsException {
-        HpsGiftCardReplace response = _giftService.replace(TestData.giftCard1(), TestData.giftCard2()).execute();
+        HpsGiftCard oldCard = new HpsGiftCard();
+        oldCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCard newCard = new HpsGiftCard();
+        newCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.replace().withOldCard(oldCard).withNewCard(newCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
         assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_CEILING), response.getBalanceAmount());
@@ -1060,7 +1317,13 @@ public class ECommerce {
 
     @Test
     public void test_049_replace_gift_2() throws HpsException {
-        HpsGiftCardReplace response = _giftService.replace(TestData.giftCard2(), TestData.giftCard1()).execute();
+        HpsGiftCard newCard = new HpsGiftCard();
+        newCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCard oldCard = new HpsGiftCard();
+        oldCard.setCardNumber("5022440000000000007");
+        
+        HpsGiftCardResponse response = giftService.replace().withOldCard(oldCard).withNewCard(newCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
         assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_CEILING), response.getBalanceAmount());
@@ -1070,57 +1333,74 @@ public class ECommerce {
 
     @Test
     public void test_050_sale_gift_1() throws HpsException {
-        HpsGiftCardSale response = _giftService.sale(TestData.giftCard1(), BigDecimal.valueOf(1.0)).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardSale response = giftService.sale(BigDecimal.valueOf(1.0)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_051_sale_gift_2() throws HpsException {
-        HpsGiftCardSale response = _giftService.sale(TestData.giftCard2(), BigDecimal.valueOf(2.0)).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardSale response = giftService.sale(BigDecimal.valueOf(2.0)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_052_sale_gift_1_void() throws HpsException {
-        HpsGiftCardSale saleResponse = _giftService.sale(TestData.giftCard1(), BigDecimal.valueOf(3.0)).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardSale saleResponse = giftService.sale(BigDecimal.valueOf(3.0)).withCard(giftCard).execute();
         assertNotEquals(saleResponse, null);
         assertEquals("0", saleResponse.getResponseCode());
-
-        // VOID TRANSACTION
-        HpsGiftCardVoid voidResponse = _giftService.voidTransaction(saleResponse.getTransactionID()).execute();
-        assertNotEquals(null, voidResponse);
-        assertEquals("0", voidResponse.getResponseCode());
+        test52TransactionId = saleResponse.getTransactionID();
     }
 
     @Test
     public void test_053_sale_gift_2_reversal() throws HpsException {
-        HpsGiftCardSale saleResponse = _giftService.sale(TestData.giftCard2(), BigDecimal.valueOf(4.0)).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardSale saleResponse = giftService.sale(BigDecimal.valueOf(4.0)).withCard(giftCard).execute();
         assertNotEquals(saleResponse, null);
         assertEquals("0", saleResponse.getResponseCode());
+        test53TransactionId = saleResponse.getTransactionID();
+    }
 
-        // REVERSE TRANSACTION
-        HpsGiftCardReversal reverseResponse = _giftService.reverse(BigDecimal.valueOf(4.0))
-                .usingTransactionId(saleResponse.getTransactionID())
+    // VOID
+
+    @Test
+    public void test_054_void_gift() throws HpsException {
+        HpsGiftCardResponse voidResponse = giftService.voidSale(test52TransactionId).execute();
+        assertNotEquals(null, voidResponse);
+        assertEquals("0", voidResponse.getResponseCode());
+    }
+
+    // REVERSAL
+
+    @Test
+    public void test_055_reversal_gift() throws HpsException {
+        HpsGiftCardResponse reverseResponse = giftService.reverse(BigDecimal.valueOf(4.0))
+                .withTransactionId(test53TransactionId)
                 .execute();
 
         assertNotEquals(reverseResponse, null);
         assertEquals(reverseResponse.getResponseCode(), "0");
     }
 
-    // VOID
-
-    // test_054_void_gift: SEE TEST 52
-
-    // REVERSAL
-
-    // test_055_reversal_gift: SEE TEST 53
-
     @Test
     public void test_056_reversal_gift_2() throws HpsException {
-        HpsGiftCardReversal response = _giftService.reverse(BigDecimal.valueOf(2.0))
-                .usingGiftCard(TestData.giftCard2())
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.reverse(BigDecimal.valueOf(2.0))
+                .withCard(giftCard)
                 .execute();
 
         assertNotEquals(null, response);
@@ -1131,7 +1411,10 @@ public class ECommerce {
 
     @Test
     public void test_057_deactivate_gift_1() throws HpsException {
-        HpsGiftCardDeactivate response = _giftService.deactivate(TestData.giftCard1()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardResponse response = giftService.deactivate().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
@@ -1144,7 +1427,10 @@ public class ECommerce {
 
     @Test
     public void test_059_balance_inquiry_rewards_1() throws HpsException {
-        HpsGiftCardBalance response = _giftService.balance(TestData.giftCard1()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardResponse response = giftService.balance().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
         assertEquals(BigDecimal.valueOf(0), response.getPointsBalanceAmount());
@@ -1152,7 +1438,10 @@ public class ECommerce {
 
     @Test
     public void test_060_balance_inquiry_rewards_2() throws HpsException {
-        HpsGiftCardBalance response = _giftService.balance(TestData.giftCard2()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.balance().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
         assertEquals(BigDecimal.valueOf(0), response.getPointsBalanceAmount());
@@ -1162,22 +1451,26 @@ public class ECommerce {
 
     @Test
     public void test_061_create_alias_gift_1() throws HpsException {
-        HpsGiftCardAlias response = _giftService.alias(Enums.GiftCardAliasReqBlock1TypeAction.CREATE, "9725550100").execute();
+        HpsGiftCardAlias response = giftService.alias().withAction(GiftCardAliasAction.Create).withAlias("9725550100").execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_062_create_alias_gift_2() throws HpsException {
-        HpsGiftCardAlias response = _giftService.alias(Enums.GiftCardAliasReqBlock1TypeAction.CREATE, "9725550100").execute();
+        HpsGiftCardAlias response = giftService.alias().withAction(GiftCardAliasAction.Create).withAlias("9725550100").execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_063_add_alias_gift_1() throws HpsException {
-        HpsGiftCardAlias response = _giftService.alias(Enums.GiftCardAliasReqBlock1TypeAction.ADD, "2145550199")
-                .withCard(TestData.giftCard1())
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardAlias response = giftService.alias().withAction(GiftCardAliasAction.Add)
+                .withAlias("2145550199")
+                .withCard(giftCard)
                 .execute();
 
         assertNotEquals(null, response);
@@ -1186,8 +1479,11 @@ public class ECommerce {
 
     @Test
     public void test_064_add_alias_gift_2() throws HpsException {
-        HpsGiftCardAlias response = _giftService.alias(Enums.GiftCardAliasReqBlock1TypeAction.ADD, "2145550199")
-                .withCard(TestData.giftCard2())
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardAlias response = giftService.alias().withAction(GiftCardAliasAction.Add).withAlias("2145550199")
+                .withCard(giftCard)
                 .execute();
 
         assertNotEquals(null, response);
@@ -1196,8 +1492,11 @@ public class ECommerce {
 
     @Test
     public void test_065_delete_alias_gift_1() throws HpsException {
-        HpsGiftCardAlias response = _giftService.alias(Enums.GiftCardAliasReqBlock1TypeAction.DELETE, "2145550199")
-                .withCard(TestData.giftCard1())
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardAlias response = giftService.alias().withAction(GiftCardAliasAction.Delete).withAlias("2145550199")
+                .withCard(giftCard)
                 .execute();
 
         assertNotEquals(null, response);
@@ -1208,8 +1507,11 @@ public class ECommerce {
 
     @Test
     public void test_066_redeem_points_gift_1() throws HpsException {
-        HpsGiftCardSale response = _giftService.sale(TestData.giftCard1(), BigDecimal.valueOf(100))
-                .withCurrency(Enums.currencyType.POINTS)
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardSale response = giftService.sale(BigDecimal.valueOf(100)).withCard(giftCard)
+                .withCurrency("points")
                 .execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
@@ -1217,8 +1519,11 @@ public class ECommerce {
 
     @Test
     public void test_067_redeem_points_gift_2() throws HpsException {
-        HpsGiftCardSale response = _giftService.sale(TestData.giftCard2(), BigDecimal.valueOf(200))
-                .withCurrency(Enums.currencyType.POINTS)
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardSale response = giftService.sale(BigDecimal.valueOf(200)).withCard(giftCard)
+                .withCurrency("points")
                 .execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
@@ -1229,8 +1534,8 @@ public class ECommerce {
         HpsGiftCard giftCard = new HpsGiftCard();
         giftCard.setAlias("9725550100");
 
-        HpsGiftCardSale response = _giftService.sale(giftCard, BigDecimal.valueOf(300))
-                .withCurrency(Enums.currencyType.POINTS)
+        HpsGiftCardSale response = giftService.sale(BigDecimal.valueOf(300)).withCard(giftCard)
+                .withCurrency("points")
                 .execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
@@ -1240,14 +1545,20 @@ public class ECommerce {
 
     @Test
     public void test_069_rewards_gift_1() throws HpsException {
-        HpsGiftCardReward response = _giftService.reward(TestData.giftCard1(), BigDecimal.valueOf(10)).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardResponse response = giftService.reward(BigDecimal.valueOf(10)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_070_rewards_gift_2() throws HpsException {
-        HpsGiftCardReward response = _giftService.reward(TestData.giftCard2(), BigDecimal.valueOf(11)).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.reward(BigDecimal.valueOf(11)).withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
@@ -1256,14 +1567,26 @@ public class ECommerce {
 
     @Test
     public void test_071_replace_gift_1() throws HpsException {
-        HpsGiftCardReplace response = _giftService.replace(TestData.giftCard1(), TestData.giftCard2()).execute();
+        HpsGiftCard oldCard = new HpsGiftCard();
+        oldCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCard newCard = new HpsGiftCard();
+        newCard.setCardNumber("5022440000000000007");
+        
+        HpsGiftCardResponse response = giftService.replace().withOldCard(oldCard).withNewCard(newCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_072_replace_gift_2() throws HpsException {
-        HpsGiftCardReplace response = _giftService.replace(TestData.giftCard2(), TestData.giftCard1()).execute();
+        HpsGiftCard newCard = new HpsGiftCard();
+        newCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCard oldCard = new HpsGiftCard();
+        oldCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.replace().withOldCard(oldCard).withNewCard(newCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
@@ -1272,14 +1595,20 @@ public class ECommerce {
 
     @Test
     public void test_073_deactivate_gift_1() throws HpsException {
-        HpsGiftCardDeactivate response = _giftService.deactivate(TestData.giftCard1()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000098");
+
+        HpsGiftCardResponse response = giftService.deactivate().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
 
     @Test
     public void test_074_deactivate_gift_2() throws HpsException {
-        HpsGiftCardDeactivate response = _giftService.deactivate(TestData.giftCard2()).execute();
+        HpsGiftCard giftCard = new HpsGiftCard();
+        giftCard.setCardNumber("5022440000000000007");
+
+        HpsGiftCardResponse response = giftService.deactivate().withCard(giftCard).execute();
         assertNotEquals(null, response);
         assertEquals("0", response.getResponseCode());
     }
@@ -1293,20 +1622,16 @@ public class ECommerce {
     @Test
     @SuppressWarnings("SpellCheckingInspection")
     public void test_999_close_batch() throws HpsException {
-        System.out.println("\033[32mclosing open batch...");
-
-        try {
-            HpsBatch batch = _batchService.close().execute();
-            assertNotEquals(batch, null);
-
-            System.out.printf("\033[32mbatch id: %d\n", batch.getId());
-            System.out.printf("\033[32msequence number: %d\n", batch.getSequenceNumber());
-        } catch (HpsGatewayException ex) {
-            if (ex.getCode() != HpsGatewayExceptionCodes.NoOpenBatch) {
-                throw ex;
-            } else {
-                System.out.println("\033[33mno open batch");
-            }
+        try{
+            HpsBatch response = this.batchService.closeBatch();
+            if(response == null)
+                fail("Response is null");
+            System.out.println(String.format("Batch ID: %s", response.getId()));
+            System.out.println(String.format("Sequence Number: %s", response.getSequenceNumber()));
+        }
+        catch(HpsException exc){
+            if (!exc.getMessage().equals("Transaction was rejected because it requires a batch to be open."))
+                fail(exc.getMessage());
         }
     }
 }

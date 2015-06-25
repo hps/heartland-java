@@ -2,6 +2,8 @@ package com.hps.integrator.entities.credit;
 
 import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.HpsTransactionHeader;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 
 public class HpsReversal extends HpsTransaction {
 
@@ -10,11 +12,6 @@ public class HpsReversal extends HpsTransaction {
 	private String mAvsResultText;
 	private String mCvvResultText;
 	private String mCpcIndicator;
-	
-	public HpsReversal(HpsTransactionHeader header)
-	{
-		super(header);
-	}
 	
 	public String getAvsResultCode() {
 		return mAvsResultCode;
@@ -55,4 +52,17 @@ public class HpsReversal extends HpsTransaction {
 	public void setCpcIndicator(String cpcIndicator) {
 		this.mCpcIndicator = cpcIndicator;
 	}
+
+    public HpsReversal fromElementTree(ElementTree rsp) {
+        Element reverseResponse = rsp.get("Transaction").firstChild();
+
+        super.fromElementTree(rsp);
+        this.setAvsResultCode(reverseResponse.getString("AVSRsltCode"));
+        this.setAvsResultText(reverseResponse.getString("AVSRsltText"));
+        this.setCpcIndicator(reverseResponse.getString("CPCInd"));
+        this.setCvvResultCode(reverseResponse.getString("CVVRsltCode"));
+        this.setCvvResultText(reverseResponse.getString("CVVRsltText"));
+
+        return this;
+    }
 }

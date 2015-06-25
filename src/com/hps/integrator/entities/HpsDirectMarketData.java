@@ -4,8 +4,8 @@ import java.util.Calendar;
 
 public class HpsDirectMarketData {
     private String invoiceNumber;
-    private int shipMonth;
-    private int shipDay;
+    private Integer shipMonth;
+    private Integer shipDay;
 
     public HpsDirectMarketData () {
         Calendar cal = Calendar.getInstance();
@@ -23,7 +23,7 @@ public class HpsDirectMarketData {
         this.shipMonth = cal.get(Calendar.MONTH) + 1;
     }
 
-    public HpsDirectMarketData (String invoiceNumber, int shipDay, int shipMonth) {
+    public HpsDirectMarketData (String invoiceNumber, Integer shipDay, Integer shipMonth) {
         this.invoiceNumber = invoiceNumber;
         this.shipDay = shipDay;
         this.shipMonth = shipMonth;
@@ -37,19 +37,19 @@ public class HpsDirectMarketData {
         this.invoiceNumber = invoiceNumber;
     }
 
-    public int getShipDay() {
+    public Integer getShipDay() {
         return shipDay;
     }
 
-    public void setShipDay(int shipDay) {
+    public void setShipDay(Integer shipDay) {
         this.shipDay = shipDay;
     }
 
-    public int getShipMonth() {
+    public Integer getShipMonth() {
         return shipMonth;
     }
 
-    public void setShipMonth(int shipMonth) {
+    public void setShipMonth(Integer shipMonth) {
         this.shipMonth = shipMonth;
     }
 }

@@ -1,58 +1,68 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.gift.HpsGiftCard;
 import com.hps.integrator.entities.gift.HpsGiftCardAlias;
-import com.hps.integrator.infrastructure.HpsCheckException;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.infrastructure.emums.GiftCardAliasAction;
+import com.hps.integrator.services.fluent.HpsFluentGiftService;
 
-public class GiftCardAliasBuilder extends GatewayTransactionBuilder<GiftCardAliasBuilder, HpsGiftCardAlias> {
-    public GiftCardAliasBuilder(IHpsServicesConfig config, Enums.GiftCardAliasReqBlock1TypeAction action, String alias) {
-        super(config);
+public class GiftCardAliasBuilder extends HpsBuilderAbstract<HpsFluentGiftService, HpsGiftCardAlias> {
+    HpsGiftCard card;
+    String alias;
+    GiftCardAliasAction action;
 
-        transaction = new PosRequestVer10Transaction();
-        PosGiftCardAliasReqType item = new PosGiftCardAliasReqType();
-        GiftCardAliasReqBlock1Type block1 = new GiftCardAliasReqBlock1Type();
-
-        block1.Action = action;
-        block1.Alias = alias;
-
-        item.Block1 = block1;
-        transaction.GiftCardAlias = item;
+    public GiftCardAliasBuilder withCard(HpsGiftCard value) {
+        this.card = value;
+        return this;
+    }
+    public GiftCardAliasBuilder withAlias(String value) {
+        this.alias = value;
+        return this;
+    }
+    public GiftCardAliasBuilder withAction(GiftCardAliasAction value) {
+        this.action = value;
+        return this;
     }
 
-    @Override
-    protected GiftCardAliasBuilder getBuilder() {
-        return this;
+    public GiftCardAliasBuilder(HpsFluentGiftService service) {
+        super(service);
     }
 
     @Override
     public HpsGiftCardAlias execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosGiftCardAliasRspType aliasRsp = resp.Ver10.Transaction.GiftCardAlias;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(aliasRsp.RspCode), aliasRsp.RspText);
-        HpsGiftCardAlias aliasResult = new HpsGiftCardAlias(hydrateTransactionHeader(resp.Ver10.Header));
+        Element transaction = Et.element("GiftCardAlias");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Action").text(action.getValue());
+        Et.subElement(block1, "Alias").text(alias);
+        if(card != null)
+            block1.append(service.hydrateGiftCardData(card));
 
-        HpsGiftCard responseCard = new HpsGiftCard();
-        responseCard.setNumber(aliasRsp.CardData.CardNbr);
-
-        aliasResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        aliasResult.setGiftCard(responseCard);
-        aliasResult.setResponseCode(Integer.toString(aliasRsp.RspCode));
-        aliasResult.setResponseText(aliasRsp.RspText);
-
-        return aliasResult;
+        ElementTree response = service.submitTransaction(transaction);
+        return new HpsGiftCardAlias().fromElementTree(response);
     }
 
-    public GiftCardAliasBuilder withCard(HpsGiftCard giftCard) {
-        transaction.GiftCardAlias.Block1.CardData = new GiftCardDataType();
-        transaction.GiftCardAlias.Block1.CardData = hydrateGiftCardData(giftCard);
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("aliasIsNotNull", "Alias is required."));
+        this.addValidation(new HpsBuilderValidation("cardIsNotNull", "Card is required."));
+        this.addValidation(new HpsBuilderValidation("actionIsNotNull", "Action is required."));
+    }
+
+    private boolean aliasIsNotNull(){
+        return this.alias != null;
+    }
+
+    private boolean cardIsNotNull() {
+        if(action != GiftCardAliasAction.Create)
+            return this.card != null;
+        else return this.card == null;
+    }
+
+    private boolean actionIsNotNull() {
+        return this.action != null;
     }
 }

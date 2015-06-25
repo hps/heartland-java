@@ -1,9 +1,10 @@
 package com.hps.integrator.tests.testdata;
 
-import PosGateway.Exchange.Hps.Enums;
 import com.hps.integrator.entities.HpsAddress;
 import com.hps.integrator.entities.check.HpsCheck;
 import com.hps.integrator.entities.check.HpsCheckHolder;
+import com.hps.integrator.infrastructure.emums.AccountTypeType;
+import com.hps.integrator.infrastructure.emums.CheckTypeType;
 
 public class TestCheck {
     public static HpsAddress heartlandAddress() {
@@ -34,9 +35,9 @@ public class TestCheck {
         HpsCheck check = new HpsCheck();
         check.setAccountNumber("24413815");
         check.setRoutingNumber("490000018");
-        check.setCheckType(Enums.checkTypeType.PERSONAL);
+        check.setCheckType(CheckTypeType.personal);
         check.setSecCode("PPD");
-        check.setAccountType(Enums.accountTypeType.CHECKING);
+        check.setAccountType(AccountTypeType.checking);
         check.setCheckHolder(checkHolder());
 
         return check;
@@ -68,9 +69,9 @@ public class TestCheck {
         HpsCheck check = new HpsCheck();
         check.setAccountNumber("24413815");
         check.setRoutingNumber("490000018");
-        check.setCheckType(Enums.checkTypeType.PERSONAL);
+        check.setCheckType(CheckTypeType.personal);
         check.setSecCode("PPD");
-        check.setAccountType(Enums.accountTypeType.CHECKING);
+        check.setAccountType(AccountTypeType.checking);
         check.setCheckHolder(checkHolder);
 
         return check;

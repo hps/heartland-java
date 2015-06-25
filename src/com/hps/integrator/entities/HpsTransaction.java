@@ -1,5 +1,12 @@
 package com.hps.integrator.entities;
 
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 /**
  * The HPS transaction.
  */
@@ -9,6 +16,7 @@ public class HpsTransaction {
     private String mResponseCode;
     private String mResponseText;
     private String mReferenceNumber;
+    private String mClientTransactionId;
 
     public HpsTransaction() {}
 
@@ -54,6 +62,14 @@ public class HpsTransaction {
 
     public void setReferenceNumber(String referenceNumber) {
         this.mReferenceNumber = referenceNumber;
+    }
+
+    public String getClientTransactionId() {
+        return mClientTransactionId;
+    }
+
+    public void setClientTransactionId(String clientTransactionId) {
+        this.mClientTransactionId = clientTransactionId;
     }
 
     public static String transactionTypeToServiceName(HpsTransactionType transactionType) {
@@ -111,5 +127,41 @@ public class HpsTransaction {
         } else {
             return null;
         }
+    }
+
+    public HpsTransaction fromElementTree(ElementTree rsp){
+        Element header = rsp.get("Header");
+        Date date = null;
+        if(header.has("RspDt")) {
+            try {
+                date = new SimpleDateFormat("YYmmddTHHMMSS").parse(header.getString("RspDt"));
+            } catch(ParseException e) { date = null; }
+        }
+
+        String clientTransactionId = null;
+        if(header.has("ClientTxnId"))
+            clientTransactionId = header.getString("ClientTxnId");
+
+        this.setHeader(new HpsTransactionHeader(
+                header.getInt("GatewayRspCode"),
+                header.getString("GatewayRspMsg"),
+                date,
+                clientTransactionId
+        ));
+
+        this.setTransactionID(header.getInt("GatewayTxnId"));
+        this.setClientTransactionId(clientTransactionId);
+
+        Element item = rsp.get("Transaction").firstChild();
+        if(item != null) {
+            if(item.has("RspCode"))
+                this.setResponseCode(item.getString("RspCode"));
+            if(item.has("RspText"))
+                this.setResponseText(item.getString("RspText"));
+            if(item.has("RefNbr"))
+                this.setReferenceNumber(item.getString("RefNbr"));
+        }
+
+        return this;
     }
 }

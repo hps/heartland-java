@@ -1,11 +1,11 @@
 package com.hps.integrator.services;
 
-import PosGateway.Exchange.Hps.*;
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.gift.*;
-import com.hps.integrator.fluent.*;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.HpsGiftCardAliasAction;
+import com.hps.integrator.infrastructure.emums.GiftCardAliasAction;
 import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
 import com.hps.integrator.infrastructure.validation.HpsInputValidation;
 import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
@@ -24,46 +24,6 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
         super(servicesConfig);
     }
     
-    public GiftCardActivateBuilder activate(BigDecimal amount, HpsGiftCard giftCard) {
-        return new GiftCardActivateBuilder(servicesConfig, amount, giftCard);
-    }
-
-    public GiftCardAddValueBuilder addValue(BigDecimal amount, HpsGiftCard giftCard) {
-        return new GiftCardAddValueBuilder(servicesConfig, amount, giftCard);
-    }
-
-    public GiftCardAliasBuilder alias(Enums.GiftCardAliasReqBlock1TypeAction action, String alias) {
-        return new GiftCardAliasBuilder(servicesConfig, action, alias);
-    }
-
-    public GiftCardBalanceBuilder balance(HpsGiftCard giftCard) {
-        return new GiftCardBalanceBuilder(servicesConfig, giftCard);
-    }
-
-    public GiftCardDeactivateBuilder deactivate(HpsGiftCard giftCard) {
-        return new GiftCardDeactivateBuilder(servicesConfig, giftCard);
-    }
-
-    public GiftCardReplaceBuilder replace(HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) {
-        return new GiftCardReplaceBuilder(servicesConfig, oldGiftCard, newGiftCard);
-    }
-
-    public GiftCardReverseUsingBuilder reverse(BigDecimal amount) {
-        return new GiftCardReverseUsingBuilder(new GiftCardReverseBuilder(servicesConfig, amount));
-    }
-
-    public GiftCardRewardBuilder reward(HpsGiftCard giftCard, BigDecimal amount) {
-        return new GiftCardRewardBuilder(servicesConfig, amount, giftCard);
-    }
-
-    public GiftCardSaleBuilder sale(HpsGiftCard giftCard, BigDecimal amount) {
-        return new GiftCardSaleBuilder(servicesConfig, amount, giftCard);
-    }
-
-    public GiftCardVoidBuilder voidTransaction(int transactionId) {
-        return new GiftCardVoidBuilder(servicesConfig, transactionId);
-    }
-
     /**
      * An <b>activate</b> transaction is used to activate a gift card and assign an initial amount to
      * it. The gift card must not have been previously activated.
@@ -74,21 +34,17 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Activation
      * @throws HpsException
      */
-    public HpsGiftCardActivate activate(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
+    public HpsGiftCardResponse activate(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardActivateReqType item = new PosGiftCardActivateReqType();
-        GiftCardActivateReqBlock1Type block1 = new GiftCardActivateReqBlock1Type();
+        Element transaction = Et.element("GiftCardActivate");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        block1.Currency = Enums.currencyType.USD;
-        block1.Amt = amount;
-        item.Block1 = block1;
-        transaction.GiftCardActivate = item;
-
-        return this.submitActivation(transaction);
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -100,19 +56,17 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Add Value
      * @throws HpsException
      */
-    public HpsGiftCardAddValue addValue(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
+    public HpsGiftCardResponse addValue(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardAddValueReqType item = new PosGiftCardAddValueReqType();
-        GiftCardAddValueReqBlock1Type block1 = new GiftCardAddValueReqBlock1Type();
+        Element transaction = Et.element("GiftCardAddValue");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        item.Block1 = block1;
-        transaction.GiftCardAddValue = item;
-
-        return this.submitAddValue(transaction);
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -127,43 +81,15 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Alias
      * @throws HpsException
      */
-    public HpsGiftCardAlias alias(HpsGiftCardAliasAction action, HpsGiftCard giftCard, String alias) throws HpsException {
-        Enums.GiftCardAliasReqBlock1TypeAction gatewayAction = Enums.GiftCardAliasReqBlock1TypeAction.ADD;
-        if(action == HpsGiftCardAliasAction.Create) {
-            gatewayAction = Enums.GiftCardAliasReqBlock1TypeAction.CREATE;
-        } else if (action == HpsGiftCardAliasAction.Delete) {
-            gatewayAction = Enums.GiftCardAliasReqBlock1TypeAction.DELETE;
-        }
+    public HpsGiftCardAlias alias(GiftCardAliasAction action, HpsGiftCard giftCard, String alias) throws HpsException {
+        Element transaction = Et.element("GiftCardAlias");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Action").text(action.getValue());
+        Et.subElement(block1, "Alias").text(alias);
+        block1.append(hydrateGiftCardData(giftCard));
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardAliasReqType item = new PosGiftCardAliasReqType();
-        GiftCardAliasReqBlock1Type block1 = new GiftCardAliasReqBlock1Type();
-
-        block1.CardData = hydrateGiftCardData(giftCard);
-        block1.Action = gatewayAction;
-        block1.Alias = alias;
-
-        item.Block1 = block1;
-        transaction.GiftCardAlias = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardAliasRspType aliasRsp = resp.Ver10.Transaction.GiftCardAlias;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(aliasRsp.RspCode), aliasRsp.RspText);
-        HpsGiftCardAlias aliasResult = new HpsGiftCardAlias(this.hydrateTransactionHeader(resp.Ver10.Header));
-
-        HpsGiftCard responseCard = new HpsGiftCard();
-        responseCard.setNumber(aliasRsp.CardData.CardNbr);
-
-        aliasResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        aliasResult.setGiftCard(responseCard);
-        aliasResult.setResponseCode(Integer.toString(aliasRsp.RspCode));
-        aliasResult.setResponseText(aliasRsp.RspText);
-
-        return aliasResult;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardAlias().fromElementTree(response);
     }
 
     /**
@@ -173,34 +99,13 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Balance
      * @throws HpsException
      */
-    public HpsGiftCardBalance cardBalance(HpsGiftCard giftCard) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardBalanceReqType item = new PosGiftCardBalanceReqType();
-        GiftCardBalanceReqBlock1Type block1 = new GiftCardBalanceReqBlock1Type();
+    public HpsGiftCardResponse cardBalance(HpsGiftCard giftCard) throws HpsException {
+        Element transaction = Et.element("GiftCardBalance");
+        Element block1 = Et.subElement(transaction, "Block1");
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        item.Block1 = block1;
-        transaction.GiftCardBalance = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardBalanceRspType balanceRsp = resp.Ver10.Transaction.GiftCardBalance;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(balanceRsp.RspCode), balanceRsp.RspText);
-
-        HpsGiftCardBalance balanceResult = new HpsGiftCardBalance(this.hydrateTransactionHeader(resp.Ver10.Header));
-        balanceResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        balanceResult.setAuthorizationCode(balanceRsp.AuthCode);
-        balanceResult.setBalanceAmount(balanceRsp.BalanceAmt);
-        balanceResult.setPointsBalanceAmount(balanceRsp.PointsBalanceAmt);
-        balanceResult.setRewards(balanceRsp.Rewards);
-        balanceResult.setNotes(balanceRsp.Notes);
-        balanceResult.setResponseCode(Integer.toString(balanceRsp.RspCode));
-        balanceResult.setResponseText(balanceRsp.RspText);
-
-        return balanceResult;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -211,31 +116,13 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Deactivate
      * @throws HpsException
      */
-    public HpsGiftCardDeactivate deactivateCard(HpsGiftCard giftCard) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardDeactivateReqType item = new PosGiftCardDeactivateReqType();
-        GiftCardDeactivateReqBlock1Type block1 = new GiftCardDeactivateReqBlock1Type();
+    public HpsGiftCardResponse deactivateCard(HpsGiftCard giftCard) throws HpsException {
+        Element transaction = Et.element("GiftCardBalance");
+        Element block1 = Et.subElement(transaction, "Block1");
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        item.Block1 = block1;
-        transaction.GiftCardDeactivate = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardDeactivateRspType deactivateRsp = resp.Ver10.Transaction.GiftCardDeactivate;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(deactivateRsp.RspCode), deactivateRsp.RspText);
-
-        HpsGiftCardDeactivate deactivateResult = new HpsGiftCardDeactivate(this.hydrateTransactionHeader(resp.Ver10.Header));
-        deactivateResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        deactivateResult.setAuthorizationCode(deactivateRsp.AuthCode);
-        deactivateResult.setPointsBalanceAmount(deactivateRsp.PointsBalanceAmt);
-        deactivateResult.setResponseCode(Integer.toString(deactivateRsp.RspCode));
-        deactivateResult.setResponseText(deactivateRsp.RspText);
-
-        return deactivateResult;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -248,33 +135,14 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Replace
      * @throws HpsException
      */
-    public HpsGiftCardReplace replaceCard(HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardReplaceReqType item = new PosGiftCardReplaceReqType();
-        GiftCardReplaceReqBlock1Type block1 = new GiftCardReplaceReqBlock1Type();
+    public HpsGiftCardResponse replaceCard(HpsGiftCard oldGiftCard, HpsGiftCard newGiftCard) throws HpsException {
+        Element transaction = Et.element("GiftCardReplace");
+        Element block1 = Et.subElement(transaction, "Block1");
+        block1.append(hydrateGiftCardData(oldGiftCard, "OldCardData"));
+        block1.append(hydrateGiftCardData(newGiftCard, "NewCardData"));
 
-        block1.OldCardData = hydrateGiftCardData(oldGiftCard);
-        block1.NewCardData = hydrateGiftCardData(newGiftCard);
-        item.Block1 = block1;
-        transaction.GiftCardReplace = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardReplaceRspType replaceRsp = resp.Ver10.Transaction.GiftCardReplace;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(replaceRsp.RspCode), replaceRsp.RspText);
-
-        HpsGiftCardReplace replaceResult = new HpsGiftCardReplace(this.hydrateTransactionHeader(resp.Ver10.Header));
-        replaceResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        replaceResult.setAuthorizationCode(replaceRsp.AuthCode);
-        replaceResult.setBalanceAmount(replaceRsp.BalanceAmt);
-        replaceResult.setPointsBalanceAmount(replaceRsp.PointsBalanceAmt);
-        replaceResult.setResponseCode(Integer.toString(replaceRsp.RspCode));
-        replaceResult.setResponseText(replaceRsp.RspText);
-
-        return replaceResult;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -292,28 +160,26 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Reward
      * @throws HpsException
      */
-    public HpsGiftCardReward reward(BigDecimal amount, String currency, HpsGiftCard giftCard, BigDecimal gratuity, BigDecimal tax) throws HpsException {
+    public HpsGiftCardResponse reward(BigDecimal amount, String currency, HpsGiftCard giftCard, BigDecimal gratuity, BigDecimal tax) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         currency = currency.toLowerCase();
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardRewardReqType item = new PosGiftCardRewardReqType();
-        GiftCardRewardReqBlock1Type block1 = new GiftCardRewardReqBlock1Type();
+        Element transaction = Et.element("GiftCardReward");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        block1.Amt = amount;
+        if(currency.equals("usd") || currency.equals("points"))
+            Et.subElement(block1, "Currency").text(currency.equals("usd") ? "USD" : "POINTS");
 
-        if(currency.equals("usd") || currency.equals("points")) {
-            block1.Currency = currency.equals("usd") ? Enums.currencyType.USD : Enums.currencyType.POINTS;
-        }
+        if(gratuity != null)
+            Et.subElement(block1, "GratuityAmtInfo").text(gratuity.toString());
 
-        if (gratuity != null && gratuity.compareTo(BigDecimal.ZERO) > 0) { block1.GratuityAmtInfo  = gratuity; }
-        if (tax != null && tax.compareTo(BigDecimal.ZERO) > 0) { block1.TaxAmtInfo = tax; }
+        if(tax != null)
+            Et.subElement(block1, "TaxAmtInfo").text(tax.toString());
 
-        item.Block1 = block1;
-        transaction.GiftCardReward = item;
-
-        return submitReward(transaction);
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -329,8 +195,8 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Reward
      * @throws HpsException
      */
-    public HpsGiftCardReward reward(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
-        return reward(amount, currency, giftCard, BigDecimal.ZERO, BigDecimal.ZERO);
+    public HpsGiftCardResponse reward(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
+        return reward(amount, currency, giftCard, null, null);
     }
 
     /**
@@ -349,24 +215,22 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
         HpsInputValidation.checkAmount(amount);
         currency = currency.toLowerCase();
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardSaleReqType item = new PosGiftCardSaleReqType();
-        GiftCardSaleReqBlock1Type block1 = new GiftCardSaleReqBlock1Type();
+        Element transaction = Et.element("GiftCardSale");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        block1.Amt = amount;
+        if(currency.equals("usd") || currency.equals("points"))
+            Et.subElement(block1, "Currency").text(currency.equals("usd") ? "USD" : "POINTS");
 
-        if(currency.equals("usd") || currency.equals("points")) {
-            block1.Currency = currency.equals("usd") ? Enums.currencyType.USD : Enums.currencyType.POINTS;
-        }
+        if(gratuity != null)
+            Et.subElement(block1, "GratuityAmtInfo").text(gratuity.toString());
 
-        if (gratuity != null && gratuity.compareTo(BigDecimal.ZERO) > 0) { block1.GratuityAmtInfo = gratuity; }
-        if (tax != null && tax.compareTo(BigDecimal.ZERO) > 0) { block1.TaxAmtInfo = tax; }
+        if(tax != null)
+            Et.subElement(block1, "TaxAmtInfo").text(tax.toString());
 
-        item.Block1 = block1;
-        transaction.GiftCardSale = item;
-
-        return submitSale(transaction);
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardSale().fromElementTree(response);
     }
 
     /**
@@ -380,7 +244,7 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @throws HpsException
      */
     public HpsGiftCardSale sale(BigDecimal amount, String currency, HpsGiftCard giftCard) throws HpsException {
-        return sale(amount, currency, giftCard, BigDecimal.ZERO, BigDecimal.ZERO);
+        return sale(amount, currency, giftCard, null, null);
     }
 
     /**
@@ -391,33 +255,13 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Sale
      * @throws HpsException
      */
-    public HpsGiftCardVoid voidTxn(int transactionId) throws HpsException {
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardVoidReqType item = new PosGiftCardVoidReqType();
-        GiftCardVoidReqBlock1Type block1 = new GiftCardVoidReqBlock1Type();
+    public HpsGiftCardResponse voidTxn(Integer transactionId) throws HpsException {
+        Element transaction = Et.element("GiftCardVoid");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
 
-        block1.GatewayTxnId = transactionId;
-        item.Block1 = block1;
-        transaction.GiftCardVoid = item;
-
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardVoidRspType voidRsp = resp.Ver10.Transaction.GiftCardVoid;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(voidRsp.RspCode), voidRsp.RspText);
-
-        HpsGiftCardVoid voidResult = new HpsGiftCardVoid(this.hydrateTransactionHeader(resp.Ver10.Header));
-        voidResult.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        voidResult.setAuthorizationCode(voidRsp.AuthCode);
-        voidResult.setBalanceAmount(voidRsp.BalanceAmt);
-        voidResult.setPointsBalanceAmount(voidRsp.PointsBalanceAmt);
-        voidResult.setNotes(voidRsp.Notes);
-        voidResult.setResponseCode(Integer.toString(voidRsp.RspCode));
-        voidResult.setResponseText(voidRsp.RspText);
-
-        return voidResult;
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -431,21 +275,17 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Sale
      * @throws HpsException
      */
-    public HpsGiftCardReversal reverse(HpsGiftCard giftCard, BigDecimal amount, String currency) throws HpsException {
+    public HpsGiftCardResponse reverse(HpsGiftCard giftCard, BigDecimal amount, String currency) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardReversalReqType item = new PosGiftCardReversalReqType();
-        GiftCardReversalReqBlock1Type block1 = new GiftCardReversalReqBlock1Type();
+        Element transaction = Et.element("GiftCardReversal");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        block1.append(hydrateGiftCardData(giftCard));
 
-        block1.CardData = hydrateGiftCardData(giftCard);
-        block1.Amt = amount;
-
-        item.Block1 = block1;
-        transaction.GiftCardReversal = item;
-
-        return submitReversal(transaction);
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
     /**
@@ -459,147 +299,31 @@ public class HpsGiftCardService extends HpsSoapGatewayService {
      * @return The HPS gift Card Sale
      * @throws HpsException
      */
-    public HpsGiftCardReversal reverse(int transactionId, BigDecimal amount, String currency) throws HpsException {
+    public HpsGiftCardResponse reverse(Integer transactionId, BigDecimal amount, String currency) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
-        PosRequestVer10Transaction transaction = new PosRequestVer10Transaction();
-        PosGiftCardReversalReqType item = new PosGiftCardReversalReqType();
-        GiftCardReversalReqBlock1Type block1 = new GiftCardReversalReqBlock1Type();
+        Element transaction = Et.element("GiftCardReversal");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
 
-        block1.GatewayTxnId = transactionId;
-        block1.Amt = amount;
-
-        item.Block1 = block1;
-        transaction.GiftCardReversal = item;
-
-        return submitReversal(transaction);
+        ElementTree response = submitTransaction(transaction);
+        return new HpsGiftCardResponse().fromElementTree(response);
     }
 
-    private HpsGiftCardActivate submitActivation(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardActivateRspType activationRsp = resp.Ver10.Transaction.GiftCardActivate;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(activationRsp.RspCode), activationRsp.RspText);
-
-        HpsGiftCardActivate activation = new HpsGiftCardActivate(this.hydrateTransactionHeader(resp.Ver10.Header));
-        activation.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        activation.setAuthorizationCode(activationRsp.AuthCode);
-        activation.setBalanceAmount(activationRsp.BalanceAmt);
-        activation.setPointsBalanceAmount(activationRsp.PointsBalanceAmt);
-        activation.setRewards(activationRsp.Rewards);
-        activation.setNotes(activationRsp.Notes);
-        activation.setResponseCode(Integer.toString(activationRsp.RspCode));
-        activation.setResponseText(activationRsp.RspText);
-
-        return activation;
+    public ElementTree submitTransaction(Element transaction) throws HpsException {
+        return submitTransaction(transaction, null);
     }
+    public ElementTree submitTransaction(Element transaction, String clientTransactionId) throws HpsException {
+        ElementTree rsp = doTransaction(transaction, clientTransactionId);
+        HpsGatewayResponseValidation.checkGatewayResponse(rsp, transaction.tag());
+        HpsIssuerResponseValidation.checkIssuerResponse(
+                rsp.get("Header").getInt("GatewayTxnId"),
+                rsp.get(transaction.tag()).getString("RspCode"),
+                rsp.get(transaction.tag()).getString("RspText")
+        );
 
-    private HpsGiftCardAddValue submitAddValue(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardAddValueRspType addValueRsp = resp.Ver10.Transaction.GiftCardAddValue;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(addValueRsp.RspCode), addValueRsp.RspText);
-
-        HpsGiftCardAddValue addValue = new HpsGiftCardAddValue(this.hydrateTransactionHeader(resp.Ver10.Header));
-        addValue.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        addValue.setAuthorizationCode(addValueRsp.AuthCode);
-        addValue.setBalanceAmount(addValueRsp.BalanceAmt);
-        addValue.setPointsBalanceAmount(addValueRsp.PointsBalanceAmt);
-        addValue.setRewards(addValueRsp.Rewards);
-        addValue.setNotes(addValueRsp.Notes);
-        addValue.setResponseCode(Integer.toString(addValueRsp.RspCode));
-        addValue.setResponseText(addValueRsp.RspText);
-
-        return addValue;
-    }
-
-    private HpsGiftCardReward submitReward(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardRewardRspType rewardRsp = resp.Ver10.Transaction.GiftCardReward;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(rewardRsp.RspCode), rewardRsp.RspText);
-
-        HpsGiftCardReward reward = new HpsGiftCardReward(this.hydrateTransactionHeader(resp.Ver10.Header));
-        reward.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        reward.setAuthorizationCode(rewardRsp.AuthCode);
-        reward.setBalanceAmount(rewardRsp.BalanceAmt);
-        reward.setPointsBalanceAmount(rewardRsp.PointsBalanceAmt);
-        reward.setResponseCode(Integer.toString(rewardRsp.RspCode));
-        reward.setResponseText(rewardRsp.RspText);
-
-        return reward;
-    }
-
-    private HpsGiftCardSale submitSale(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardSaleRspType saleRsp = resp.Ver10.Transaction.GiftCardSale;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(saleRsp.RspCode), saleRsp.RspText);
-
-        HpsGiftCardSale sale = new HpsGiftCardSale(this.hydrateTransactionHeader(resp.Ver10.Header));
-        sale.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        sale.setAuthorizationCode(saleRsp.AuthCode);
-        sale.setBalanceAmount(saleRsp.BalanceAmt);
-        sale.setSplitTenderCardAmount(saleRsp.SplitTenderCardAmt);
-        sale.setSplitTenderBalanceDue(saleRsp.SplitTenderBalanceDueAmt);
-        sale.setPointsBalanceAmount(saleRsp.PointsBalanceAmt);
-        sale.setResponseCode(Integer.toString(saleRsp.RspCode));
-        sale.setResponseText(saleRsp.RspText);
-
-        return sale;
-    }
-
-    private HpsGiftCardReversal submitReversal(PosRequestVer10Transaction transaction) throws HpsException {
-        this.transaction = transaction;
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosGiftCardReversalRspType reversalRsp = resp.Ver10.Transaction.GiftCardReversal;
-        HpsIssuerResponseValidation.checkIssuerResponse(resp.Ver10.Header.GatewayTxnId,
-                String.valueOf(reversalRsp.RspCode), reversalRsp.RspText);
-
-        HpsGiftCardReversal reversal = new HpsGiftCardReversal(this.hydrateTransactionHeader(resp.Ver10.Header));
-        reversal.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        reversal.setAuthorizationCode(reversalRsp.AuthCode);
-        reversal.setBalanceAmount(reversalRsp.BalanceAmt);
-        reversal.setResponseCode(Integer.toString(reversalRsp.RspCode));
-        reversal.setResponseText(reversalRsp.RspText);
-
-        return reversal;
-    }
-
-    private GiftCardDataType hydrateGiftCardData(HpsGiftCard giftCard)
-    {
-        GiftCardDataType cardDataType = new GiftCardDataType();
-
-        if(giftCard.isTrackData()) {
-            cardDataType.TrackData = giftCard.getNumber();
-        } else {
-            cardDataType.CardNbr = giftCard.getNumber();
-        }
-
-        if(giftCard.getEncryptionData() != null) {
-            EncryptionDataType encryptionData = new EncryptionDataType();
-            encryptionData.EncryptedTrackNumber = giftCard.getEncryptionData().getEncryptedTrackNumber();
-            encryptionData.KSN = giftCard.getEncryptionData().getKsn();
-            encryptionData.KTB = giftCard.getEncryptionData().getKsn();
-            encryptionData.Version = giftCard.getEncryptionData().getVersion();
-            cardDataType.EncryptionData = encryptionData;
-        }
-
-        return cardDataType;
+        return rsp;
     }
 }

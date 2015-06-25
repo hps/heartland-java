@@ -1,122 +1,195 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
+import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.entities.HpsDirectMarketData;
-import com.hps.integrator.entities.HpsTokenData;
+import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransactionDetails;
-import com.hps.integrator.entities.credit.HpsCardHolder;
-import com.hps.integrator.entities.credit.HpsCharge;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
+import com.hps.integrator.entities.credit.*;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
 
-public class CreditChargeBuilder extends GatewayTransactionBuilder<CreditChargeBuilder, HpsCharge> {
-    public CreditChargeBuilder(IHpsServicesConfig config, BigDecimal amount) {
-        super(config);
+public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsCharge> {
+    private BigDecimal amount;
+    private String currency;
+    private HpsCreditCard card;
+    private String token;
+    private HpsTrackData trackData;
+    private HpsCardHolder cardHolder;
+    private boolean requestMultiUseToken = false;
+    private HpsTransactionDetails details;
+    private String txnDescriptor;
+    private boolean allowPartialAuth = false;
+    private boolean cpcReq = false;
+    private HpsDirectMarketData directMarketData;
+    private boolean allowDuplicates = false;
+    private PaymentData paymentData;
+    private boolean cardPresent = false;
+    private boolean readerPresent = false;
+    private BigDecimal gratuity;
+    private HpsAutoSubstantiation autoSubstantiation;
+    private HpsTxnReferenceData originalTxnReferenceData;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCreditSaleReqType item = new PosCreditSaleReqType();
-        CreditSaleReqBlock1Type block1 = new CreditSaleReqBlock1Type();
-
-        block1.CardData = new CardDataType();
-        block1.AllowDup = Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-
-        item.Block1 = block1;
-        transaction.CreditSale = item;
+    public CreditChargeBuilder withAmount(BigDecimal amount){
+        this.amount = amount;
+        return this;
+    }
+    public CreditChargeBuilder withCurrency(String currency){
+        this.currency = currency;
+        return this;
+    }
+    public CreditChargeBuilder withCard(HpsCreditCard card){
+        this.card = card;
+        return this;
+    }
+    public CreditChargeBuilder withToken(String token){
+        this.token = token;
+        return this;
+    }
+    public CreditChargeBuilder withTrackData(HpsTrackData trackData){
+        this.trackData = trackData;
+        return this;
+    }
+    public CreditChargeBuilder withCardHolder(HpsCardHolder cardHolder){
+        this.cardHolder = cardHolder;
+        return this;
+    }
+    public CreditChargeBuilder withRequestMultiUseToken(boolean requestMultiUseToken){
+        this.requestMultiUseToken = requestMultiUseToken;
+        return this;
+    }
+    public CreditChargeBuilder withDetails(HpsTransactionDetails details){
+        this.details = details;
+        return this;
+    }
+    public CreditChargeBuilder withTxnDescriptor(String txnDescriptor){
+        this.txnDescriptor = txnDescriptor;
+        return this;
+    }
+    public CreditChargeBuilder withAllowPartialAuth(boolean allowPartialAuth){
+        this.allowPartialAuth = allowPartialAuth;
+        return this;
+    }
+    public CreditChargeBuilder withCpcReq(boolean cpcReq){
+        this.cpcReq = cpcReq;
+        return this;
+    }
+    public CreditChargeBuilder withAllowDuplicates(boolean allowDuplicates){
+        this.allowDuplicates = allowDuplicates;
+        return this;
+    }
+    public CreditChargeBuilder withPaymentData(PaymentData paymentData){
+        this.paymentData = paymentData;
+        return this;
+    }
+    public CreditChargeBuilder withCardPresent(boolean cardPresent){
+        this.cardPresent = cardPresent;
+        return this;
+    }
+    public CreditChargeBuilder withReaderPresent(boolean readerPresent){
+        this.readerPresent = readerPresent;
+        return this;
+    }
+    public CreditChargeBuilder withGratuity(BigDecimal gratuity){
+        this.gratuity = gratuity;
+        return this;
+    }
+    public CreditChargeBuilder withOriginalTxnReferenceData(HpsTxnReferenceData originalTxnReferenceData){
+        this.originalTxnReferenceData = originalTxnReferenceData;
+        return this;
+    }
+    public CreditChargeBuilder withDirectMarketData(HpsDirectMarketData directMarketData) {
+        this.directMarketData = directMarketData;
+        return this;
+    }
+    public CreditChargeBuilder withAutoSubstantiation(HpsAutoSubstantiation autoSubstantiation){
+        this.autoSubstantiation = autoSubstantiation;
+        return this;
     }
 
-    @Override
-    protected CreditChargeBuilder getBuilder() {
-        return this;
+    public CreditChargeBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsCharge execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosResponseVer10Header header = resp.Ver10.Header;
-        AuthRspStatusType creditSaleRsp = resp.Ver10.Transaction.CreditSale;
-        HpsIssuerResponseValidation.checkIssuerResponse(header.GatewayTxnId, creditSaleRsp.RspCode, creditSaleRsp.RspText);
+        Element transaction = Et.element("CreditSale");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "AllowPartialAuth").text(allowPartialAuth ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        if(gratuity != null)
+            Et.subElement(block1, "GratuityAmtInfo").text(gratuity.toString());
 
-        HpsCharge charge = new HpsCharge(hydrateTransactionHeader(resp.Ver10.Header));
+        if(cardHolder != null)
+            block1.append(service.hydrateCardHolder(cardHolder));
 
-        charge.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        charge.setAuthorizedAmount(creditSaleRsp.AuthAmt);
-        charge.setAuthorizationCode(creditSaleRsp.AuthCode);
-        charge.setAvsResultCode(creditSaleRsp.AVSRsltCode);
-        charge.setAvsResultText(creditSaleRsp.AVSRsltText);
-        charge.setCardType(creditSaleRsp.CardType);
-        charge.setCpcIndicator(creditSaleRsp.CPCInd);
-        charge.setCvvResultCode(creditSaleRsp.CVVRsltCode);
-        charge.setCvvResultText(creditSaleRsp.CVVRsltText);
-        charge.setReferenceNumber(creditSaleRsp.RefNbr);
-        charge.setResponseCode(creditSaleRsp.RspCode);
-        charge.setResponseText(creditSaleRsp.RspText);
-
-        if (resp.Ver10.Header.TokenData != null) {
-            HpsTokenData tokenData = new HpsTokenData();
-            tokenData.setTokenRspCode(resp.Ver10.Header.TokenData.TokenRspCode);
-            tokenData.setTokenRspMsg(resp.Ver10.Header.TokenData.TokenRspMsg);
-            tokenData.setTokenValue(resp.Ver10.Header.TokenData.TokenValue);
-            charge.setTokenData(tokenData);
+        Element cardData = Et.subElement(block1, "CardData");
+        if(card != null) {
+            cardData.append(service.hydrateCardManualEntry(card, cardPresent, readerPresent));
+            if(card.getEncryptionData() != null)
+                cardData.append(service.hydrateEncryptionData(card.getEncryptionData()));
         }
+        if(token != null)
+            cardData.append(service.hydrateTokenData(token, cardPresent, readerPresent));
+        if(trackData != null) {
+            cardData.append(service.hydrateTrackData(trackData));
+            if(trackData.getEncryptionData() != null)
+                cardData.append(service.hydrateEncryptionData(trackData.getEncryptionData()));
+        }
+        if(paymentData != null) {
+            Element manualEntry = Et.element("ManualEntry");
+            Et.subElement(manualEntry, "CardNbr").text(paymentData.getApplicationPrimaryAccountNumber());
+            String expDate = paymentData.getApplicationExpirationDate();
+            Et.subElement(manualEntry, "ExpMonth").text(expDate.substring(2, 4));
+            Et.subElement(manualEntry, "ExpYear").text(expDate.substring(0, 2));
+            cardData.append(manualEntry);
 
-        return charge;
+            block1.append(service.hydrateSecureECommerce(paymentData.getPaymentData()));
+        }
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+
+        if(cpcReq) Et.subElement(block1, "CPCReq").text("Y");
+        if(details != null)
+            block1.append(service.hydrateAdditionalTxnFields(details));
+        if(txnDescriptor != null)
+            Et.subElement(block1, "TxnDescriptor").text(txnDescriptor);
+        if(autoSubstantiation != null)
+            block1.append(service.hydrateAutoSubstantiation(autoSubstantiation));
+        if(originalTxnReferenceData != null) {
+            Element refElement = Et.subElement(block1, "OrigTxnRefData");
+            Et.subElement(refElement, "AuthCode").text(originalTxnReferenceData.getAuthorizationCode());
+            Et.subElement(refElement, "CardNbrLastFour").text(originalTxnReferenceData.getCardNumberLast4());
+        }
+        if(directMarketData != null)
+            block1.append(service.hydrateDirectMarketData(directMarketData));
+
+        String clientTransactionId = service.getClientTxnId(details);
+        ElementTree response = service.submitTransaction(transaction, clientTransactionId);
+        return new HpsCharge().fromElementTree(response);
     }
 
-    public CreditChargeBuilder withCardHolder(HpsCardHolder cardHolder) {
-        transaction.CreditSale.Block1.CardHolderData = hydrateCardHolderData(cardHolder);
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("amountIsNotNull", "Amount is required."));
+        this.addValidation(new HpsBuilderValidation("onlyOnePaymentMethod", "Only one payment method is required."));
     }
 
-    public CreditChargeBuilder withRequestMultiuseToken(boolean requestMultiuseToken) {
-        transaction.CreditSale.Block1.CardData.TokenRequest = requestMultiuseToken ? Enums.booleanType.Y : Enums.booleanType.N;
-        return this;
+    private boolean amountIsNotNull(){
+        return this.amount != null;
     }
 
-    public CreditChargeBuilder withAllowDuplicates(boolean allowDuplicates) {
-        transaction.CreditSale.Block1.AllowDup = allowDuplicates ? Enums.booleanType.Y : Enums.booleanType.N;
-        return this;
-    }
+    private boolean onlyOnePaymentMethod(){
+        int count = 0;
+        if(card != null) count++;
+        if(trackData != null) count++;
+        if(token != null) count++;
 
-    public CreditChargeBuilder withDescriptor(String descriptor) {
-        transaction.CreditSale.Block1.TxnDescriptor = descriptor;
-        return this;
-    }
-
-    public CreditChargeBuilder withAllowPartialAuth(boolean allowPartialAuth) {
-        transaction.CreditSale.Block1.AllowPartialAuth = allowPartialAuth ? Enums.booleanType.Y : Enums.booleanType.N;
-        return this;
-    }
-
-    public CreditChargeBuilder withGratuity(BigDecimal gratuity) {
-        transaction.CreditSale.Block1.GratuityAmtInfo = gratuity;
-        return this;
-    }
-
-    public CreditChargeBuilder withAdditionalTransactionFields(HpsTransactionDetails details) {
-        transaction.CreditSale.Block1.AdditionalTxnFields = hydrateAdditionalTxnFields(details);
-        return this;
-    }
-
-    public CreditChargeBuilder withDirectMarketData(HpsDirectMarketData directMarketData) {
-        transaction.CreditSale.Block1.DirectMktData = hydrateDirectMktData(directMarketData);
-        return this;
-    }
-
-    public CreditChargeBuilder withEncryptionData(HpsEncryptionData encryptionData) {
-        transaction.CreditSale.Block1.CardData.EncryptionData = hydrateEncryptionData(encryptionData);
-        return this;
-    }
-
-    public CreditChargeBuilder withCpcReq(boolean cpcRequested) {
-        transaction.CreditSale.Block1.CPCReq = cpcRequested ? Enums.booleanType.Y : Enums.booleanType.N;
-        return this;
+        return count == 1;
     }
 }

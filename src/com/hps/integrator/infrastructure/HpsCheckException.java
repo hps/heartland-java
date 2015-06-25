@@ -4,7 +4,7 @@ import com.hps.integrator.entities.check.HpsCheckResponseDetails;
 
 import java.util.List;
 
-public class HpsCheckException extends Exception {
+public class HpsCheckException extends HpsException {
     private int transactionId;
     private int code;
     private List<HpsCheckResponseDetails> details;

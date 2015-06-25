@@ -1,42 +1,48 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.PosCreditVoidReqType;
-import PosGateway.Exchange.Hps.PosRequestVer10Transaction;
-import PosGateway.Exchange.Hps.PosResponse;
-import PosGateway.Exchange.Hps.PosResponseVer10Header;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.HpsTransaction;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
-public class CreditVoidBuilder extends GatewayTransactionBuilder<CreditVoidBuilder, HpsTransaction> {
-    public CreditVoidBuilder(IHpsServicesConfig config, int transactionId) {
-        super(config);
+public class CreditVoidBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsTransaction> {
+    Integer transactionId;
+    String clientTransactionId;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCreditVoidReqType item = new PosCreditVoidReqType();
-        item.GatewayTxnId = transactionId;
-
-        transaction.CreditVoid = item;
+    public CreditVoidBuilder withTransactionId(Integer transactionId) {
+        this.transactionId = transactionId;
+        return this;
     }
 
-    @Override
-    protected CreditVoidBuilder getBuilder() {
+    public CreditVoidBuilder withClientTransactionId(String clientTransactionId) {
+        this.clientTransactionId = clientTransactionId;
         return this;
+    }
+
+    public CreditVoidBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsTransaction execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosResponseVer10Header header = resp.Ver10.Header;
+        Element transaction = Et.element("CreditVoid");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
 
-        HpsTransaction result = new HpsTransaction(hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
+        HpsTransaction response = new HpsTransaction().fromElementTree(service.submitTransaction(transaction, clientTransactionId));
+        response.setResponseCode("00");
+        response.setResponseText("");
+        return response;
+    }
 
-        return result;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("transactionIdIsNotNull", "TransactionID is required."));
+    }
+
+    private boolean transactionIdIsNotNull(){
+        return this.transactionId != null;
     }
 }

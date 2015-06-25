@@ -1,10 +1,10 @@
 package com.hps.integrator.tests.checks;
 
-import PosGateway.Exchange.Hps.Enums;
 import com.hps.integrator.entities.check.HpsCheck;
 import com.hps.integrator.entities.check.HpsCheckResponse;
-import com.hps.integrator.infrastructure.HpsCheckException;
 import com.hps.integrator.infrastructure.HpsException;
+import com.hps.integrator.infrastructure.emums.AccountTypeType;
+import com.hps.integrator.infrastructure.emums.CheckTypeType;
 import com.hps.integrator.services.HpsCheckService;
 import com.hps.integrator.tests.testdata.TestCheck;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
@@ -19,9 +19,7 @@ public class CertECommerceTests {
     // start ACH Debit Consumer Tests
 
     @Test
-    public void check_ACHDebitConsumer1() throws HpsException, HpsCheckException {
-        HpsCheck check = TestCheck.certCheck();
-
+    public void check_ACHDebitConsumer1() throws HpsException {
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(11.00));
         assertNotNull(response);
@@ -34,9 +32,9 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ACHDebitConsumer2CheckingBusiness() throws HpsException, HpsCheckException {
+    public void check_ACHDebitConsumer2CheckingBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(12.00));
@@ -46,9 +44,9 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ACHDebitConsumer3SavingsPersonal() throws HpsException, HpsCheckException {
+    public void check_ACHDebitConsumer3SavingsPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
+        check.setAccountType(AccountTypeType.savings);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(13.00));
@@ -58,10 +56,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ACHDebitConsumer4SavingsBusiness() throws HpsException, HpsCheckException {
+    public void check_ACHDebitConsumer4SavingsBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setAccountType(AccountTypeType.savings);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(14.00));
@@ -75,7 +73,7 @@ public class CertECommerceTests {
     // start ACH Debit Corporate Tests
 
     @Test
-    public void check_ACHDebitCorporate5() throws HpsException, HpsCheckException {
+    public void check_ACHDebitCorporate5() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("CCD");
         check.getCheckHolder().setCheckName("Heartland Pays");
@@ -92,11 +90,11 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ACHDebitCorporate6CheckingBusiness() throws HpsException, HpsCheckException {
+    public void check_ACHDebitCorporate6CheckingBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("CCD");
         check.getCheckHolder().setCheckName("Heartland Pays");
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(16.00));
@@ -106,11 +104,11 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ACHDebitCorporate7SavingsPersonal() throws HpsException, HpsCheckException {
+    public void check_ACHDebitCorporate7SavingsPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("CCD");
         check.getCheckHolder().setCheckName("Heartland Pays");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
+        check.setAccountType(AccountTypeType.savings);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(17.00));
@@ -120,12 +118,12 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ACHDebitCorporate8SavingsBusiness() throws HpsException, HpsCheckException {
+    public void check_ACHDebitCorporate8SavingsBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("CCD");
         check.getCheckHolder().setCheckName("Heartland Pays");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setAccountType(AccountTypeType.savings);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(18.00));
@@ -139,7 +137,7 @@ public class CertECommerceTests {
     // start ACH eGold Tests
 
     @Test
-    public void check_EGold9() throws HpsException, HpsCheckException {
+    public void check_EGold9() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
 
@@ -151,10 +149,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EGold10CheckingBusiness() throws HpsException, HpsCheckException {
+    public void check_EGold10CheckingBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validEGoldConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(12.00));
@@ -168,10 +166,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EGold11SavingsPersonal() throws HpsException, HpsCheckException {
+    public void check_EGold11SavingsPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
+        check.setAccountType(AccountTypeType.savings);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validEGoldConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(13.00));
@@ -181,11 +179,11 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EGold12SavingsBusiness() throws HpsException, HpsCheckException {
+    public void check_EGold12SavingsBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setAccountType(AccountTypeType.savings);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validEGoldConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(14.00));
@@ -199,7 +197,7 @@ public class CertECommerceTests {
     // start ACH eSilver Tests
 
     @Test
-    public void check_ESilver13() throws HpsException, HpsCheckException {
+    public void check_ESilver13() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
 
@@ -211,10 +209,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ESilver14CheckingBusiness() throws HpsException, HpsCheckException {
+    public void check_ESilver14CheckingBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validEGoldConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(16.00));
@@ -228,10 +226,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ESilver15SavingsPersonal() throws HpsException, HpsCheckException {
+    public void check_ESilver15SavingsPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
+        check.setAccountType(AccountTypeType.savings);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validEGoldConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(17.00));
@@ -241,11 +239,11 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_ESilver16SavingsBusiness() throws HpsException, HpsCheckException {
+    public void check_ESilver16SavingsBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("POP");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setAccountType(AccountTypeType.savings);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validEGoldConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(18.00));
@@ -259,7 +257,7 @@ public class CertECommerceTests {
     // start ACH eBronze Tests
 
     @Test
-    public void check_EBronzeVerify17CheckingPersonal() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify17CheckingPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("eBronze");
         check.setCheckVerify(true);
@@ -272,10 +270,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EBronzeVerify18CheckingBusiness() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify18CheckingBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("eBronze");
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setCheckType(CheckTypeType.business);
         check.setCheckVerify(true);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
@@ -286,10 +284,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EBronzeVerify19SavingsPersonal() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify19SavingsPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("eBronze");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
+        check.setAccountType(AccountTypeType.savings);
         check.setCheckVerify(true);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
@@ -300,11 +298,11 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EBronzeVerify20SavingsBusiness() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify20SavingsBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("eBronze");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setAccountType(AccountTypeType.savings);
+        check.setCheckType(CheckTypeType.business);
         check.setCheckVerify(true);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validCertMultiUseConfig());
@@ -319,7 +317,7 @@ public class CertECommerceTests {
     // start checks-by-web
 
     @Test
-    public void check_EBronzeVerify21() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify21() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("WEB");
 
@@ -331,10 +329,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EBronzeVerify22CheckingBusiness() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify22CheckingBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("WEB");
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(20.00));
@@ -344,10 +342,10 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EBronzeVerify23SavingsPersonal() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify23SavingsPersonal() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("WEB");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
+        check.setAccountType(AccountTypeType.savings);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(21.00));
@@ -361,11 +359,11 @@ public class CertECommerceTests {
     }
 
     @Test
-    public void check_EBronzeVerify24SavingsBusiness() throws HpsException, HpsCheckException {
+    public void check_EBronzeVerify24SavingsBusiness() throws HpsException {
         HpsCheck check = TestCheck.certCheck();
         check.setSecCode("WEB");
-        check.setAccountType(Enums.accountTypeType.SAVINGS);
-        check.setCheckType(Enums.checkTypeType.BUSINESS);
+        check.setAccountType(AccountTypeType.savings);
+        check.setCheckType(CheckTypeType.business);
 
         HpsCheckService service = new HpsCheckService(TestServicesConfig.validServicesConfig());
         HpsCheckResponse response = service.sale(TestCheck.certCheck(), new BigDecimal(22.00));

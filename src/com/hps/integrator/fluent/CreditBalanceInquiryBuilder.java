@@ -1,55 +1,71 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
+import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.credit.HpsAuthorization;
 import com.hps.integrator.entities.credit.HpsCardHolder;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
+import com.hps.integrator.entities.credit.HpsCreditCard;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
-public class CreditBalanceInquiryBuilder extends GatewayTransactionBuilder<CreditBalanceInquiryBuilder, HpsAuthorization> {
-    public CreditBalanceInquiryBuilder(IHpsServicesConfig config) {
-        super(config);
+public class CreditBalanceInquiryBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsAuthorization> {
+    HpsCreditCard card;
+    HpsCardHolder cardHolder;
+    HpsTrackData trackData;
+    String token;
 
-        transaction = new PosRequestVer10Transaction();
-        PosPrePaidBalanceInquiryReqType item = new PosPrePaidBalanceInquiryReqType();
-
-        item.Block1 = new PrePaidBalanceInquiryReqBlock1Type();
-        item.Block1.CardData = new CardDataType();
-        transaction.PrePaidBalanceInquiry = item;
+    public CreditBalanceInquiryBuilder withCard(HpsCreditCard card) {
+        this.card = card;
+        return this;
+    }
+    public CreditBalanceInquiryBuilder withCardHolder(HpsCardHolder cardHolder) {
+        this.cardHolder = cardHolder;
+        return this;
+    }
+    public CreditBalanceInquiryBuilder withTrackData(HpsTrackData trackData) {
+        this.trackData = trackData;
+        return this;
+    }
+    public CreditBalanceInquiryBuilder withToken(String token) {
+        this.token = token;
+        return this;
     }
 
-    @Override
-    protected CreditBalanceInquiryBuilder getBuilder() {
-        return this;
+    public CreditBalanceInquiryBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsAuthorization execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosResponseVer10Header header = resp.Ver10.Header;
-        AuthRspStatusType balanceInquiry = resp.Ver10.Transaction.PrePaidBalanceInquiry;
-        HpsIssuerResponseValidation.checkIssuerResponse(header.GatewayTxnId, balanceInquiry.RspCode, balanceInquiry.RspText);
+        Element transaction = Et.element("PrePaidBalanceInquiry");
+        Element block1 = Et.subElement(transaction, "Block1");
 
-        return hydrateAuthorization(header, balanceInquiry);
+        Element cardData = Et.subElement(block1, "CardData");
+        if(card != null)
+            cardData.append(service.hydrateCardManualEntry(card, false, false));
+        if(trackData != null)
+            cardData.append(service.hydrateTrackData(trackData));
+        if(token != null)
+            cardData.append(service.hydrateTokenData(token, false, false));
+
+        ElementTree response = service.submitTransaction(transaction);
+        return new HpsAuthorization().fromElementTree(response);
     }
 
-    public CreditBalanceInquiryBuilder withCardHolder(HpsCardHolder cardHolder) {
-        transaction.PrePaidBalanceInquiry.Block1.CardHolderData = hydrateCardHolderData(cardHolder);
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("onlyOnePaymentMethod", "Only one payment method is required."));
     }
 
-    public CreditBalanceInquiryBuilder requestMultiuseToken() {
-        transaction.PrePaidBalanceInquiry.Block1.CardData.TokenRequest = Enums.booleanType.Y;
-        return this;
-    }
+    private boolean onlyOnePaymentMethod(){
+        int count = 0;
+        if(card != null) count++;
+        if(trackData != null) count++;
+        if(token != null) count++;
 
-    public CreditBalanceInquiryBuilder withEncryptionData(HpsEncryptionData encryptionData) {
-        transaction.PrePaidBalanceInquiry.Block1.CardData.EncryptionData = hydrateEncryptionData(encryptionData);
-        return this;
+        return count == 1;
     }
 }

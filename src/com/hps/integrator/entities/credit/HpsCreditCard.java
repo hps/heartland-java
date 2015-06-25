@@ -1,5 +1,7 @@
 package com.hps.integrator.entities.credit;
 
+import com.hps.integrator.entities.HpsEncryptionData;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -20,8 +22,9 @@ public class HpsCreditCard {
 	private Map<String,Pattern> regexMap;
 	private String number;
 	private String cvv;
-	private int expMonth;
-	private int expYear;
+	private Integer expMonth;
+	private Integer expYear;
+    private HpsEncryptionData encryptionData;
 	
 	public HpsCreditCard()
 	{
@@ -51,23 +54,31 @@ public class HpsCreditCard {
 		this.cvv = cvv;
 	}
 	
-	public int getExpMonth() {
+	public Integer getExpMonth() {
 		return expMonth;
 	}
 	
-	public void setExpMonth(int expMonth) {
+	public void setExpMonth(Integer expMonth) {
 		this.expMonth = expMonth;
 	}
 	
-	public int getExpYear() {
+	public Integer getExpYear() {
 		return expYear;
 	}
 	
-	public void setExpYear(int expYear) {
+	public void setExpYear(Integer expYear) {
 		this.expYear = expYear;
 	}
-	
-	public String getCardType() {
+
+    public HpsEncryptionData getEncryptionData() {
+        return encryptionData;
+    }
+
+    public void setEncryptionData(HpsEncryptionData encryptionData) {
+        this.encryptionData = encryptionData;
+    }
+
+    public String getCardType() {
 		String cardType = "Unknown";
 		
 		try {

@@ -1,47 +1,51 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.check.HpsCheckResponse;
-import com.hps.integrator.infrastructure.HpsCheckException;
+import com.hps.integrator.infrastructure.Element;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCheckService;
 
-public class CheckVoidBuilder extends GatewayTransactionBuilder<CheckVoidBuilder, HpsCheckResponse> {
-    public CheckVoidBuilder(IHpsServicesConfig config) {
-        super(config);
+public class CheckVoidBuilder extends HpsBuilderAbstract<HpsFluentCheckService, HpsCheckResponse> {
+    private Integer transactionId;
+    private String clientTransactionId;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCheckVoidReqType item = new PosCheckVoidReqType();
-
-        item.Block1 = new CheckVoidReqBlock1Type();
-        transaction.CheckVoid = item;
+    public CheckVoidBuilder withTransactionId(Integer transactionId) {
+        this.transactionId = transactionId;
+        return this;
     }
-
-    @Override
-    protected CheckVoidBuilder getBuilder() {
+    public CheckVoidBuilder withClientTransactionId(String clientTransactionId) {
+        this.clientTransactionId = clientTransactionId;
         return this;
     }
 
+    public CheckVoidBuilder(HpsFluentCheckService service) {
+        super(service);
+    }
+
     @Override
-    public HpsCheckResponse execute() throws HpsException, HpsCheckException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+    public HpsCheckResponse execute() throws HpsException {
+        super.execute();
 
-        PosCheckVoidRspType voidRsp = resp.Ver10.Transaction.CheckVoid;
-        if (voidRsp.RspCode != 0) {
-            throw new HpsCheckException(resp.Ver10.Header.GatewayTxnId, getResponseDetails(voidRsp.CheckRspInfo),
-                    voidRsp.RspCode, voidRsp.RspMessage);
-        }
+        Element transaction = Et.element("CheckVoid");
+        Element block1 = Et.subElement(transaction, "Block1");
 
-        HpsCheckResponse response = new HpsCheckResponse(hydrateTransactionHeader(resp.Ver10.Header));
-        response.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        response.setAuthorizationCode(voidRsp.AuthCode);
-        response.setResponseCode(Integer.toString(voidRsp.RspCode));
-        response.setResponseText(voidRsp.RspMessage);
+        if(this.transactionId != null)
+            Et.subElement(block1, "GatewayTxnId").text(this.transactionId.toString());
+        else if(this.clientTransactionId != null)
+            Et.subElement(block1, "ClientTxnId").text(this.clientTransactionId);
 
-        response.setDetails(getResponseDetails(voidRsp.CheckRspInfo));
+        return this.service.submitTransaction(transaction);
+    }
 
-        return response;
+    @Override
+    protected void setupValidations() throws HpsException {
+        addValidation(new HpsBuilderValidation("onlyOneTransactionId", "You may only use one transaction id."));
+    }
+
+    private boolean onlyOneTransactionId() {
+        int count = 0;
+        if(this.transactionId != null) count++;
+        if(this.clientTransactionId != null) count++;
+        return count == 1;
     }
 }

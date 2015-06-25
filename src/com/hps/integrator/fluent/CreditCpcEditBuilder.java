@@ -1,45 +1,56 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.credit.HpsCpcData;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
-public class CreditCpcEditBuilder extends GatewayTransactionBuilder<CreditCpcEditBuilder, HpsTransaction> {
-    public CreditCpcEditBuilder(IHpsServicesConfig config, int transactionId) {
-        super(config);
+public class CreditCpcEditBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsTransaction> {
+    Integer transactionId;
+    HpsCpcData cpcData;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCreditCPCEditReqType item = new PosCreditCPCEditReqType();
-        item.GatewayTxnId = transactionId;
-
-        transaction.CreditCPCEdit = item;
+    public CreditCpcEditBuilder withTransactionId(Integer transactionId) {
+        this.transactionId = transactionId;
+        return this;
     }
 
-    @Override
-    protected CreditCpcEditBuilder getBuilder() {
+    public CreditCpcEditBuilder withCpcData(HpsCpcData cpcData) {
+        this.cpcData = cpcData;
         return this;
+    }
+
+    public CreditCpcEditBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsTransaction execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosResponseVer10Header header = resp.Ver10.Header;
+        Element transaction = Et.element("CreditCPCEdit");
+        Et.subElement(transaction, "GatewayTxnId").text(transactionId.toString());
+        transaction.append(service.hydrateCpcData(cpcData));
 
-        HpsTransaction result = new HpsTransaction(hydrateTransactionHeader(header));
-        result.setTransactionID(resp.Ver10.Header.GatewayTxnId);
-        result.setResponseCode("00");
-        result.setResponseText("");
-
-        return result;
+        ElementTree response = service.submitTransaction(transaction);
+        HpsTransaction trans = new HpsTransaction().fromElementTree(response);
+        trans.setResponseCode("00");
+        trans.setResponseText("");
+        return trans;
     }
 
-    public CreditCpcEditBuilder withCpcData(HpsCpcData cpcData) {
-        transaction.CreditCPCEdit.CPCData = hydrateCpcData(cpcData);
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+            this.addValidation(new HpsBuilderValidation("transactionIdIsNotNull", "TransactionId is required."));
+            this.addValidation(new HpsBuilderValidation("cpcDataIsNotNull", "CpcData is required."));
+    }
+
+    private boolean transactionIdIsNotNull(){
+        return this.transactionId != null;
+    }
+
+    private boolean cpcDataIsNotNull(){
+        return this.cpcData != null;
     }
 }

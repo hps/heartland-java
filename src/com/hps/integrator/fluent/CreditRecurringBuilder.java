@@ -1,97 +1,134 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.HpsTransactionDetails;
 import com.hps.integrator.entities.credit.HpsAuthorization;
 import com.hps.integrator.entities.credit.HpsCardHolder;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
-import com.hps.integrator.infrastructure.HpsCheckException;
+import com.hps.integrator.entities.credit.HpsCreditCard;
+import com.hps.integrator.entities.payplan.HpsPayPlanSchedule;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
-import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
 
-public class CreditRecurringBuilder extends GatewayTransactionBuilder<CreditRecurringBuilder, HpsAuthorization> {
+public class CreditRecurringBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsAuthorization> {
+    HpsPayPlanSchedule schedule;
+    String scheduleId;
+    BigDecimal amount;
+    HpsCreditCard card;
+    String token;
+    String paymentMethodKey;
+    boolean oneTime = false;
+    HpsCardHolder cardHolder;
+    HpsTransactionDetails details;
+    boolean allowDuplicates = false;
 
-    public CreditRecurringBuilder(IHpsServicesConfig config, BigDecimal amount) {
-        super(config);
-
-        transaction = new PosRequestVer10Transaction();
-        PosRecurringBillReqType item = new PosRecurringBillReqType();
-        RecurringBillReqBlock1Type block1 = new RecurringBillReqBlock1Type();
-
-        block1.AllowDup = Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.RecurringData = new RecurringDataType();
-        block1.RecurringData.OneTime = Enums.booleanType.N;
-
-        item.Block1 = block1;
-        transaction.RecurringBilling = item;
+    public CreditRecurringBuilder withSchedule(HpsPayPlanSchedule value) {
+        this.schedule = value;
+        return this;
+    }
+    public CreditRecurringBuilder withScheduleId(String value) {
+        this.scheduleId = value;
+        return this;
+    }
+    public CreditRecurringBuilder withAmount(BigDecimal value) {
+        this.amount = value;
+        return this;
+    }
+    public CreditRecurringBuilder withCard(HpsCreditCard value) {
+        this.card = value;
+        return this;
+    }
+    public CreditRecurringBuilder withToken(String value) {
+        this.token = value;
+        return this;
+    }
+    public CreditRecurringBuilder withPaymentMethodKey(String value) {
+        this.paymentMethodKey = value;
+        return this;
+    }
+    public CreditRecurringBuilder withOneTime(boolean value) {
+        this.oneTime = value;
+        return this;
+    }
+    public CreditRecurringBuilder withCardHolder(HpsCardHolder value) {
+        this.cardHolder = value;
+        return this;
+    }
+    public CreditRecurringBuilder withAllowDuplicates(boolean value) {
+        this.allowDuplicates = value;
+        return this;
+    }
+    public CreditRecurringBuilder withDetails(HpsTransactionDetails value) {
+        this.details = value;
+        return this;
     }
 
-    public CreditRecurringBuilder(IHpsServicesConfig config, BigDecimal amount, String scheduleId) {
-        super(config);
-
-        transaction = new PosRequestVer10Transaction();
-        PosRecurringBillReqType item = new PosRecurringBillReqType();
-        RecurringBillReqBlock1Type block1 = new RecurringBillReqBlock1Type();
-
-        block1.AllowDup = Enums.booleanType.fromString("N");
-        block1.Amt = amount;
-        block1.RecurringData = new RecurringDataType();
-        block1.RecurringData.ScheduleID = scheduleId;
-        block1.RecurringData.OneTime = Enums.booleanType.N;
-
-        item.Block1 = block1;
-        transaction.RecurringBilling = item;
+    public CreditRecurringBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
-    protected CreditRecurringBuilder getBuilder() {
-        return this;
+    public HpsAuthorization execute() throws HpsException {
+        super.execute();
+
+        Element transaction = Et.element("RecurringBilling");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
+        Et.subElement(block1, "Amt").text(amount.toString());
+        if(cardHolder != null)
+            block1.append(service.hydrateCardHolder(cardHolder));
+        if(details != null)
+            block1.append(service.hydrateAdditionalTxnFields(details));
+
+        if(card != null) {
+            Element cardData = Et.subElement(block1, "CardData");
+            cardData.append(service.hydrateCardManualEntry(card, false, false));
+        }
+
+        if(token != null) {
+            Element cardData = Et.subElement(block1, "CardData");
+            cardData.append(service.hydrateTokenData(token, false, false));
+        }
+
+        if(paymentMethodKey != null)
+            Et.subElement(block1, "PaymentMethodKey").text(paymentMethodKey);
+
+        if(scheduleId == null && schedule != null)
+            scheduleId = schedule.getScheduleIdentifier();
+
+        Element recurringData = Et.subElement(block1, "RecurringData");
+        String scheduleId;
+        if(schedule != null)
+            scheduleId = schedule.getScheduleKey();
+        else scheduleId = this.scheduleId;
+
+        if(scheduleId != null)
+            Et.subElement(recurringData, "ScheduleID").text(scheduleId);
+        Et.subElement(recurringData, "OneTime").text(oneTime ? "Y" : "N");
+
+        String clientTransactionId = service.getClientTxnId(details);
+        ElementTree response = service.submitTransaction(transaction, clientTransactionId);
+        return new HpsAuthorization().fromElementTree(response);
     }
 
     @Override
-    public HpsAuthorization execute() throws HpsException, HpsCheckException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
-
-        PosResponseVer10Header header = resp.Ver10.Header;
-        AuthRspStatusType recurringRsp = resp.Ver10.Transaction.RecurringBilling;
-        HpsIssuerResponseValidation.checkIssuerResponse(header.GatewayTxnId, recurringRsp.RspCode, recurringRsp.RspText);
-
-        return hydrateAuthorization(header, recurringRsp);
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("amountIsNotNull", "Amount is required."));
+        this.addValidation(new HpsBuilderValidation("onlyOnePaymentMethod", "Only one payment method is required."));
     }
 
-    public CreditRecurringBuilder oneTime() {
-        transaction.RecurringBilling.Block1.RecurringData.OneTime = Enums.booleanType.Y;
-        return this;
+    private boolean amountIsNotNull(){
+        return this.amount != null;
     }
 
-    public CreditRecurringBuilder withCardHolder(HpsCardHolder cardHolder) {
-        transaction.RecurringBilling.Block1.CardHolderData = hydrateCardHolderData(cardHolder);
-        return this;
-    }
+    private boolean onlyOnePaymentMethod(){
+        int count = 0;
+        if(card != null) count++;
+        if(paymentMethodKey != null) count++;
+        if(token != null) count++;
 
-    public CreditRecurringBuilder requestMultiuseToken() {
-        transaction.RecurringBilling.Block1.CardData.TokenRequest = Enums.booleanType.Y;
-        return this;
-    }
-
-    public CreditRecurringBuilder allowDuplicates() {
-        transaction.RecurringBilling.Block1.AllowDup = Enums.booleanType.Y;
-        return this;
-    }
-
-    public CreditRecurringBuilder withAdditionalTransactionFields(HpsTransactionDetails details) {
-        transaction.RecurringBilling.Block1.AdditionalTxnFields = hydrateAdditionalTxnFields(details);
-        return this;
-    }
-
-    public CreditRecurringBuilder withEncryptionData(HpsEncryptionData encryptionData) {
-        transaction.RecurringBilling.Block1.CardData.EncryptionData = hydrateEncryptionData(encryptionData);
-        return this;
+        return count == 1;
     }
 }

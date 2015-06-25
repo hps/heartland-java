@@ -1,20 +1,20 @@
 package com.hps.integrator.infrastructure;
 
 public class HpsGatewayException extends HpsException {
-    private HpsGatewayExceptionCodes code;
+    private HpsExceptionCodes code;
     private HpsGatewayExceptionDetails details;
 
-    public HpsGatewayException(HpsGatewayExceptionCodes code, String message) {
+    public HpsGatewayException(HpsExceptionCodes code, String message) {
         super(message);
         this.setCode(code);
     }
 
-    public HpsGatewayException(HpsGatewayExceptionCodes code, String message, Exception innerException) {
+    public HpsGatewayException(HpsExceptionCodes code, String message, Exception innerException) {
         super(message, innerException);
         this.setCode(code);
     }
 
-    public HpsGatewayException(HpsGatewayExceptionCodes code, String message, int gatewayResponseCode,
+    public HpsGatewayException(HpsExceptionCodes code, String message, int gatewayResponseCode,
                                String gatewayResponseMessage) {
         super(message);
         this.setCode(code);
@@ -25,7 +25,7 @@ public class HpsGatewayException extends HpsException {
         this.setDetails(details);
     }
 
-    public HpsGatewayException(HpsGatewayExceptionCodes code, String message, int gatewayResponseCode,
+    public HpsGatewayException(HpsExceptionCodes code, String message, int gatewayResponseCode,
                                String gatewayResponseMessage, Exception innerException) {
         super(message, innerException);
         this.setCode(code);
@@ -36,11 +36,11 @@ public class HpsGatewayException extends HpsException {
         this.setDetails(details);
     }
 
-    public HpsGatewayExceptionCodes getCode() {
+    public HpsExceptionCodes getCode() {
         return code;
     }
 
-    public void setCode(HpsGatewayExceptionCodes code) {
+    public void setCode(HpsExceptionCodes code) {
         this.code = code;
     }
 

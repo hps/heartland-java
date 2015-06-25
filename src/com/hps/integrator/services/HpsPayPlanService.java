@@ -2,7 +2,6 @@ package com.hps.integrator.services;
 
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.payplan.*;
-import com.hps.integrator.fluent.PayPlanAddCustomerBuilder;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.HpsInvalidRequestException;
 import com.hps.integrator.infrastructure.HpsPayPlanPaymentMethodType;

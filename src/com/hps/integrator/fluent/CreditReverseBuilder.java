@@ -1,74 +1,105 @@
 package com.hps.integrator.fluent;
 
-import PosGateway.Exchange.Hps.*;
-import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.entities.HpsTransactionDetails;
+import com.hps.integrator.entities.credit.HpsCardHolder;
+import com.hps.integrator.entities.credit.HpsCreditCard;
+import com.hps.integrator.entities.credit.HpsRefund;
 import com.hps.integrator.entities.credit.HpsReversal;
-import com.hps.integrator.entities.gift.HpsEncryptionData;
+import com.hps.integrator.infrastructure.Element;
+import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.validation.HpsGatewayResponseValidation;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
 
-public class CreditReverseBuilder extends GatewayTransactionBuilder<CreditReverseBuilder, HpsReversal> {
-    public CreditReverseBuilder(IHpsServicesConfig config, BigDecimal amount) {
-        super(config);
+public class CreditReverseBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsReversal> {
+    BigDecimal amount;
+    BigDecimal authAmount;
+    String currency;
+    HpsCreditCard card;
+    String token;
+    Integer transactionId;
+    HpsTransactionDetails details;
 
-        transaction = new PosRequestVer10Transaction();
-        PosCreditReversalReqType item = new PosCreditReversalReqType();
-        CreditReversalReqBlock1Type block1 = new CreditReversalReqBlock1Type();
-
-        block1.CardData = new CardDataType();
-        block1.Amt = amount;
-
-        item.Block1 = block1;
-        transaction.CreditReversal = item;
+    public CreditReverseBuilder withAmount(BigDecimal value) {
+        this.amount = value;
+        return this;
+    }
+    public CreditReverseBuilder withCurrency(String value) {
+        this.currency = value;
+        return this;
+    }
+    public CreditReverseBuilder withCard(HpsCreditCard value) {
+        this.card = value;
+        return this;
+    }
+    public CreditReverseBuilder withToken(String value) {
+        this.token = value;
+        return this;
+    }
+    public CreditReverseBuilder withTransactionId(Integer value) {
+        this.transactionId = value;
+        return this;
+    }
+    public CreditReverseBuilder withAuthAmount(BigDecimal value) {
+        this.authAmount = value;
+        return this;
+    }
+    public CreditReverseBuilder withDetails(HpsTransactionDetails value) {
+        this.details = value;
+        return this;
     }
 
-    @Override
-    protected CreditReverseBuilder getBuilder() {
-        return this;
+    public CreditReverseBuilder(HpsFluentCreditService service) {
+        super(service);
     }
 
     @Override
     public HpsReversal execute() throws HpsException {
-        PosResponse resp = doTransaction();
-        HpsGatewayResponseValidation.checkGatewayResponse(resp);
+        super.execute();
 
-        PosResponseVer10Header header = resp.Ver10.Header;
-        AuthRspStatusType respReversal = resp.Ver10.Transaction.CreditReversal;
-        HpsReversal reversal = new HpsReversal(hydrateTransactionHeader(header));
+        Element transaction = Et.element("CreditReversal");
+        Element block1 = Et.subElement(transaction, "Block1");
+        Et.subElement(block1, "Amt").text(amount.toString());
 
-        reversal.setTransactionID(header.GatewayTxnId);
-        reversal.setAvsResultCode(respReversal.AVSRsltCode);
-        reversal.setAvsResultText(respReversal.AVSRsltText);
-        reversal.setCpcIndicator(respReversal.CPCInd);
-        reversal.setCvvResultCode(respReversal.CVVRsltCode);
-        reversal.setCvvResultText(respReversal.CVVRsltText);
-        reversal.setReferenceNumber(respReversal.RefNbr);
-        reversal.setResponseCode(respReversal.RspCode);
-        reversal.setResponseText(respReversal.RspText);
+        if(authAmount != null)
+            Et.subElement(block1, "AuthAmt").text(authAmount.toString());
 
-        return reversal;
+        if(card != null) {
+            Element cardData = Et.subElement(block1, "CardData");
+            cardData.append(service.hydrateCardManualEntry(card, false, false));
+        }
+        else if(token != null) {
+            Element cardData = Et.subElement(block1, "CardData");
+            cardData.append(service.hydrateTokenData(token, false, false));
+        }
+        else if(transactionId != null)
+            Et.subElement(block1, "GatewayTxnId").text(transactionId.toString());
+
+        if(details != null)
+            block1.append(service.hydrateAdditionalTxnFields(details));
+
+        String clientTransactionId = service.getClientTxnId(details);
+        ElementTree response = service.submitTransaction(transaction, clientTransactionId);
+        return new HpsReversal().fromElementTree(response);
     }
 
-    public CreditReverseBuilder requestMultiuseToken() {
-        transaction.CreditReversal.Block1.CardData.TokenRequest = Enums.booleanType.Y;
-        return this;
+    @Override
+    protected void setupValidations() throws HpsException {
+        this.addValidation(new HpsBuilderValidation("amountIsNotNull", "Amount is required."));
+        this.addValidation(new HpsBuilderValidation("onlyOnePaymentMethod", "Only one payment method is required."));
     }
 
-    public CreditReverseBuilder withAdditionalTransactionFields(HpsTransactionDetails details) {
-        transaction.CreditReversal.Block1.AdditionalTxnFields = hydrateAdditionalTxnFields(details);
-        return this;
+    private boolean amountIsNotNull(){
+        return this.amount != null;
     }
 
-    public CreditReverseBuilder withEncryptionData(HpsEncryptionData encryptionData) {
-        transaction.CreditReversal.Block1.CardData.EncryptionData = hydrateEncryptionData(encryptionData);
-        return this;
-    }
+    private boolean onlyOnePaymentMethod(){
+        int count = 0;
+        if(card != null) count++;
+        if(transactionId != null) count++;
+        if(token != null) count++;
 
-    public CreditReverseBuilder withAuthorizedAmount(BigDecimal authorizedAmount) {
-        transaction.CreditReversal.Block1.AuthAmt = authorizedAmount;
-        return this;
+        return count == 1;
     }
 }

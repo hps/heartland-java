@@ -1,6 +1,5 @@
 package com.hps.integrator.entities;
 
-import com.hps.integrator.entities.gift.HpsEncryptionData;
 import com.hps.integrator.infrastructure.HpsTrackDataMethod;
 
 public class HpsTrackData {
