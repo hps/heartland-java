@@ -45,10 +45,9 @@ public abstract class HpsSoapGatewayService {
             if(secretApiKey.contains("_uat_"))
                 this.url = "https://posgateway.uat.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
             else if (secretApiKey.contains("_cert_"))
-                this.url = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
-            else this.url = "https://api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
+                this.url = "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
+            else this.url = "https://posgateway.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
         }
-        System.setProperty("https.protocols", "TLSv1.1,TLSv1.2");
     }
 
     protected ElementTree doTransaction(Element transaction) throws HpsException {

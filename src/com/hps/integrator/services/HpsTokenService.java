@@ -32,11 +32,10 @@ public class HpsTokenService {
         String env = components[1].toLowerCase();
 
         if (env.equals("prod")) {
-            mUrl = "https://api2.heartlandportico.com/SecureSubmit.v1/api/token";
+            mUrl = "https://api.heartlandportico.com/SecureSubmit.v1/api/token";
         } else {
-            mUrl = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway.Hpf.v1/api/token";
+            mUrl = "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway.Hpf.v1/api/token";
         }
-        System.setProperty("https.protocols", "TLSv1.1,TLSv1.2");
     }
 
     public HpsToken getToken(HpsCreditCard card) throws IOException {
