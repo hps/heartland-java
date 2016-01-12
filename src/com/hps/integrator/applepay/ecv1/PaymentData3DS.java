@@ -16,6 +16,13 @@ public class PaymentData3DS
         mEciIndicator = eciIndicator;
     }
 
+    public PaymentData3DS(String onlinePaymentCryptogram, String eciIndicator, String paymentDataType)
+    {
+        mOnlinePaymentCryptogram = onlinePaymentCryptogram;
+        mEciIndicator = eciIndicator;
+        mPaymentDataType = paymentDataType;
+    }
+
     public String getOnlinePaymentCryptogram()
     {
         return this.mOnlinePaymentCryptogram;

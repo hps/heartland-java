@@ -207,4 +207,18 @@ public class GeneralTests {
         HpsCpcData cpcData = new HpsCpcData();
         cpcData.setTaxAmount(new BigDecimal(1000.001));
     }
+
+    @Test
+    public void Charge_CvvWithLeadingZero() throws HpsException {
+        HpsCreditCard card = new HpsCreditCard();
+        card.setNumber("4111111111111111");
+        card.setExpMonth(12);
+        card.setExpYear(2025);
+        card.setCvv("012");
+
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
+        HpsCharge response = service.charge(new BigDecimal("15.15"), "usd", card, null, false);
+        assertNotNull(response);
+        assertEquals("00", response.getResponseCode());
+    }
 }

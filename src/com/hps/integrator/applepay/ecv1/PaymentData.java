@@ -80,6 +80,7 @@ public class PaymentData
             this.mApplicationPrimaryAccountNumber = jobject.get("applicationPrimaryAccountNumber").getAsString();
             this.mCurrencyCode = jobject.get("currencyCode").getAsString();
             this.mDeviceManufacturerIdentifier = jobject.get("deviceManufacturerIdentifier").getAsString();
+            String paymentDataType = jobject.get("paymentDataType").getAsString();
 
             JsonObject paymentData = jobject.getAsJsonObject("paymentData");
             String cryptogram = paymentData.get("onlinePaymentCryptogram").getAsString();
@@ -87,7 +88,7 @@ public class PaymentData
             if(paymentData.has("eciIndicator"))
                 eciIndicator = paymentData.get("eciIndicator").getAsString();
 
-            this.mPaymentData = new PaymentData3DS(cryptogram, eciIndicator);
+            this.mPaymentData = new PaymentData3DS(cryptogram, eciIndicator, paymentDataType);
             this.mTransactionAmount = jobject.get("transactionAmount").getAsString();
         }
         catch(Exception e)

@@ -43,9 +43,9 @@ public abstract class HpsSoapGatewayService {
         String secretApiKey = this.servicesConfig.getSecretAPIKey();
         if(!"".equals(secretApiKey)){
             if(secretApiKey.contains("_uat_"))
-                this.url = "https://posgateway.uat.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
+                this.url = "https://api-uat.heartlandportico.com/paymentserver.v1/POSGatewayService.asmx?wsdl";
             else if (secretApiKey.contains("_cert_"))
-                this.url = "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
+                this.url = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
             else this.url = "https://posgateway.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
         }
     }
@@ -126,7 +126,7 @@ public abstract class HpsSoapGatewayService {
             conn.setRequestMethod("POST");
             conn.addRequestProperty("Content-Type", "text/xml; charset=UTF-8");
             conn.addRequestProperty("Content-Length", String.valueOf(data.length));
-            conn.addRequestProperty("Host", "posgateway.cert.secureexchange.net");
+            conn.addRequestProperty("Host", "cert.api2.heartlandportico.com");
 
             DataOutputStream requestStream = new DataOutputStream(conn.getOutputStream());
             requestStream.write(data);
@@ -337,7 +337,7 @@ public abstract class HpsSoapGatewayService {
             return null;
 
         Element se_element = Et.element("SecureECommerce");
-        Et.subElement(se_element, "TypeOfPaymentData").text(TypeOfPaymentDataType.secure3d.getValue());
+        Et.subElement(se_element, "TypeOfPaymentData").text(paymentData.getPaymentDataTye());
 
         Element pd_element = Et.subElement(se_element, "PaymentData").text(paymentData.getOnlinePaymentCryptogram());
         pd_element.set("encoding", EncodingType.base64.getValue());

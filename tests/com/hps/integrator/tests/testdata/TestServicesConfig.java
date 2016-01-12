@@ -5,7 +5,7 @@ import com.hps.integrator.services.HpsServicesConfig;
 
 public class TestServicesConfig {
 	
-	public static final String SERVICE_URI = "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
+	public static final String SERVICE_URI = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
 
     public static IHpsServicesConfig validServicesConfig() {
         HpsServicesConfig config = new HpsServicesConfig();

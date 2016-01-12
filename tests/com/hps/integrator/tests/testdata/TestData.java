@@ -24,6 +24,19 @@ public class TestData {
             "        \"eciIndicator\": \"5\",\n" +
             "        \"onlinePaymentCryptogram\": \"XXXXf98AAajXbDRg3HSUMAACAAA=\"\n" +
             "    },\n" +
+            "    \"paymentDataType\": \"ApplePay\",\n" +
+            "    \"transactionAmount\": 100\n" +
+            "}\n";
+
+    public static final String PAYMENT_DATA_VISA_DECRYPTED_JSON_3DSecure = "{\n" +
+            "    \"applicationExpirationDate\": \"200228\",\n" +
+            "    \"applicationPrimaryAccountNumber\": \"4111111111111111\",\n" +
+            "    \"currencyCode\": \"840\",\n" +
+            "    \"deviceManufacturerIdentifier\": \"040010030273\",\n" +
+            "    \"paymentData\": {\n" +
+            "        \"eciIndicator\": \"5\",\n" +
+            "        \"onlinePaymentCryptogram\": \"XXXXf98AAajXbDRg3HSUMAACAAA=\"\n" +
+            "    },\n" +
             "    \"paymentDataType\": \"3DSecure\",\n" +
             "    \"transactionAmount\": 100\n" +
             "}\n";
@@ -36,7 +49,7 @@ public class TestData {
             "    \"paymentData\": {\n" +
             "        \"onlinePaymentCryptogram\": \"XXXXXXXXUImjWgXRSUccwAACgAAGhgEDoLABAAhAgAABAAAABJ0vEw==\"\n" +
             "    },\n" +
-            "    \"paymentDataType\": \"3DSecure\",\n" +
+            "    \"paymentDataType\": \"ApplePay\",\n" +
             "    \"transactionAmount\": 100\n" +
             "}\n";
 
@@ -48,7 +61,7 @@ public class TestData {
             "    \"paymentData\": {\n" +
             "        \"onlinePaymentCryptogram\": \"XXXXbKK+J9Z5AAWj9GzwAoABFA==\"\n" +
             "    },\n" +
-            "    \"paymentDataType\": \"3DSecure\",\n" +
+            "    \"paymentDataType\": \"ApplePay\",\n" +
             "    \"transactionAmount\": 1\n" +
             "}\n";
 

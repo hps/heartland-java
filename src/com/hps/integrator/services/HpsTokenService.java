@@ -34,7 +34,7 @@ public class HpsTokenService {
         if (env.equals("prod")) {
             mUrl = "https://api.heartlandportico.com/SecureSubmit.v1/api/token";
         } else {
-            mUrl = "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway.Hpf.v1/api/token";
+            mUrl = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway.Hpf.v1/api/token";
         }
     }
 

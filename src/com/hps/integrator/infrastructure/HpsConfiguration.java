@@ -168,7 +168,7 @@ public class HpsConfiguration implements IHpsServicesConfig {
 	{
 		if(mServiceUri == null)
 		{
-			mServiceUri = mConfigProperties.getProperty("HpsServiceUri", "https://posgateway.cert.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx");
+			mServiceUri = mConfigProperties.getProperty("HpsServiceUri", "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx");
 		}
 		
 		return mServiceUri;

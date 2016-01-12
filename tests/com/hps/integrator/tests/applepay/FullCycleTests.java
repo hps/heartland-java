@@ -18,8 +18,9 @@ public class FullCycleTests {
     HpsCreditService creditService;
 
     public FullCycleTests() throws HpsException {
+        System.setProperty("https.protocols", "TLSv1.1,TLSv1.2");
 //        this.decryptService = new DecryptService(TestData.PRIVATE_KEY_FILE_PATH, TestData.PRIVATE_KEY_PASSWORD);
-        this.creditService = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
+        this.creditService = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig(), true);
     }
 
     @Test
