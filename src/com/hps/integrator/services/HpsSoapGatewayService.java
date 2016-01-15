@@ -46,7 +46,7 @@ public abstract class HpsSoapGatewayService {
                 this.url = "https://api-uat.heartlandportico.com/paymentserver.v1/POSGatewayService.asmx?wsdl";
             else if (secretApiKey.contains("_cert_"))
                 this.url = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
-            else this.url = "https://posgateway.secureexchange.net/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
+            else this.url = "https://api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx?wsdl";
         }
     }
 

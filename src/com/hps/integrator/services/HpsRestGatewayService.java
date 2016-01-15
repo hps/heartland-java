@@ -13,7 +13,7 @@ import java.io.InputStream;
 import java.net.URL;
 
 public abstract class HpsRestGatewayService {
-    final String PROD_URL = "https://api.heartlandportico.com/payplan.v2/";
+    final String PROD_URL = "https://api2.heartlandportico.com/payplan.v2/";
     final String CERT_URL = "https://cert.api2.heartlandportico.com/Portico.PayPlan.v2/";
     final String UAT_URL = "https://api-uat.heartlandportico.com/payplan.v2/";
 

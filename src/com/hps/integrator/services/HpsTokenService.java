@@ -32,7 +32,7 @@ public class HpsTokenService {
         String env = components[1].toLowerCase();
 
         if (env.equals("prod")) {
-            mUrl = "https://api.heartlandportico.com/SecureSubmit.v1/api/token";
+            mUrl = "https://api2.heartlandportico.com/SecureSubmit.v1/api/token";
         } else {
             mUrl = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway.Hpf.v1/api/token";
         }
