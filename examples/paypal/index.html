@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="SecureSubmit JSP paypal payment example.">
+    <meta name="author" content="Russell Everett">
+    <title>PayPal Demo</title>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="assets/secure.submit-1.0.2.js"></script>
+
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>JSP SecureSubmit PayPal Example</h1>
+        <hr /><br />
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <td width="20%"><strong>Name</strong></td>
+                    <td width="60%"><strong>Description</strong></td>
+                    <td width="10%"><strong>Amount</strong></td>
+                    <td><strong>Qty</strong></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Blanton's Bourbon Single Barrel 750ML</td>
+                    <td>In the winter of 1881, Albert Bacon Blanton was born into one of the first families of bourbon history. At the age of sixteen, he started work in ...</td>
+                    <td>$37.19</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td>Pappy Van Winkle's Family Reserve 23-Year-Old Kentucky Straight Bourbon</td>
+                    <td>This very rare, limited edition bourbon takes generations of distilling know-how to produce. Only the most careful and expensive distilling ...</td>
+                    <td>$108.99</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td>Blood Oath Bourbon Pact No. 1 750ML</td>
+                    <td>A masterful union of well-bred bourbons. The first, a spicy bourbon with a mash bill favoring rye, barrel aged for a subtle woodiness. This ...</td>
+                    <td>$80.39</td>
+                    <td>1</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="clearfix">
+            <a class="btn btn-info" href="setup.jsp" role="button" style="float:right">Checkout with Paypal</a>
+        </div>
+    </div>
+</body>
+</html>

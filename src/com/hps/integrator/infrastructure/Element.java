@@ -55,6 +55,15 @@ public class Element {
         return Element.fromNode(doc, this.element.getElementsByTagName(tagName).item(0));
     }
 
+    public Element[] getAll() {
+        NodeList nodes = this.element.getChildNodes();
+
+        Element[] elements = new Element[nodes.getLength()];
+        for(int i = 0; i < nodes.getLength(); i++)
+            elements[i] = Element.fromNode(this.doc, nodes.item(i));
+
+        return elements;
+    }
     public Element[] getAll(String tagName) {
         NodeList nodes = this.element.getElementsByTagName(tagName);
 

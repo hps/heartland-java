@@ -1,7 +1,6 @@
 package com.hps.integrator.abstractions;
 
 public interface IHpsServicesConfig {
-	
 	String getDeveloperId();
 	int getDeviceId();
 	int getLicenseId();

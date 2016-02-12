@@ -41,7 +41,7 @@ public abstract class HpsSoapGatewayService {
         this.Et = new ElementTree();
 
         String secretApiKey = this.servicesConfig.getSecretAPIKey();
-        if(!"".equals(secretApiKey)){
+        if(secretApiKey != null && !"".equals(secretApiKey)){
             if(secretApiKey.contains("_uat_"))
                 this.url = "https://api-uat.heartlandportico.com/paymentserver.v1/POSGatewayService.asmx?wsdl";
             else if (secretApiKey.contains("_cert_"))
