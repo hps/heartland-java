@@ -168,4 +168,7 @@
             <url>http://ksoap2-android.googlecode.com/svn/m2-repo</url>
         </repository>
     </repositories>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 </project>
