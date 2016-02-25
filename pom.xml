@@ -103,9 +103,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.2</version>
                 <configuration>
-                    <fork>true</fork>
+                    <!--<fork>true</fork>
                     <executable>${JAVA_1_8_HOME}/bin/javac</executable>
-                    <compilerVersion>1.8</compilerVersion>
+                    <compilerVersion>1.8</compilerVersion>-->
                 </configuration>
             </plugin>
             <plugin>
