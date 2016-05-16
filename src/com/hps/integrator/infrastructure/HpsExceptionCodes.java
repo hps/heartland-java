@@ -18,5 +18,6 @@ public enum HpsExceptionCodes {
     InvalidCardData,
     InvalidNumber,
     GatewayTimeout,
-    UnexpectedGatewayResponse
+    UnexpectedGatewayResponse,
+    InvalidArgument
 }

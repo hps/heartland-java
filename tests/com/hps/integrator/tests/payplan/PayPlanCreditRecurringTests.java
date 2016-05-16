@@ -8,6 +8,7 @@ import com.hps.integrator.infrastructure.HpsPayPlanPaymentMethodStatus;
 import com.hps.integrator.infrastructure.HpsPayPlanScheduleStatus;
 import com.hps.integrator.services.HpsCreditService;
 import com.hps.integrator.services.HpsPayPlanService;
+import com.hps.integrator.services.HpsPayPlanServiceConfig;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
 import org.junit.Test;
 
@@ -23,7 +24,7 @@ public class PayPlanCreditRecurringTests {
     HpsPayPlanSchedule schedule;
 
     public PayPlanCreditRecurringTests() throws HpsException {
-        IHpsServicesConfig config = TestServicesConfig.validServicesConfig();
+        HpsPayPlanServiceConfig config = TestServicesConfig.validPayPlanConfig();
         HpsPayPlanService payPlanService = new HpsPayPlanService(config);
 
         payPlanService.setPagination(1, 0);

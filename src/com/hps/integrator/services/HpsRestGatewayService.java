@@ -12,57 +12,59 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
+
+
 public abstract class HpsRestGatewayService {
-    final String PROD_URL = "https://api2.heartlandportico.com/payplan.v2/";
-    final String CERT_URL = "https://cert.api2.heartlandportico.com/Portico.PayPlan.v2/";
-    final String UAT_URL = "https://api-uat.heartlandportico.com/payplan.v2/";
 
     int limit = -1;
     int offset = -1;
 
     IHpsServicesConfig servicesConfig;
-    String mUrl;
-
-    public void setPagination(int limit, int offset) {
-        this.limit = limit;
-        this.offset = offset;
-    }
-    private void resetPagination() {
-        this.limit = -1;
-        this.offset = -1;
-    }
 
     protected HpsRestGatewayService(IHpsServicesConfig config) {
         if(config != null) {
             this.servicesConfig = config;
-
-            String[] components = config.getSecretAPIKey().split("_");
-            String env = components[1].toLowerCase();
-
-            if (env.equals("prod")) {
-                this.mUrl = this.PROD_URL;
-            } else if (env.equals("cert")) {
-                this.mUrl = this.CERT_URL;
-            } else {
-                this.mUrl = this.UAT_URL;
-            }
         }
     }
 
     protected String doRequest(String verb, String endpoint) throws HpsException {
-        return this.doRequest(verb, endpoint, null);
+        return this.doRequest(verb, endpoint, null, null, null);
     }
-
     protected String doRequest(String verb, String endpoint, Object data) throws HpsException {
+        return this.doRequest(verb, endpoint, data, null, null);
+
+    }
+    protected String doRequest(String verb, String endpoint, Object data, HashMap<String, String> additionalHeaders, HashMap<String, String> queryStringParameters) throws HpsException {
         HttpsURLConnection conn;
+        String mUrl = servicesConfig.getServiceUri();
+
+
         try {
-            String queryString = "";
-            if(this.limit != -1 && this.offset != -1) {
-                queryString += "?limit=" + this.limit;
-                queryString += "&offset=" + this.offset;
+            String queryString = null;
+            //Query string
+            if(queryStringParameters != null) {
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("?");
+                for (Map.Entry<String, String> entry : queryStringParameters.entrySet()) {
+                    if (sb.length() > 0) {
+                        sb.append("&");
+                    }
+                    sb.append(String.format("%s=%s",
+                            URLEncoder.encode(entry.getKey(), "UTF-8"),
+                            URLEncoder.encode(entry.getValue(), "UTF-8")
+                    ));
+                }
+                queryString = sb.toString();
+                conn = (HttpsURLConnection)new URL(mUrl + endpoint + queryString).openConnection();
+            }else{
+                conn = (HttpsURLConnection)new URL(mUrl + endpoint).openConnection();
             }
 
-            conn = (HttpsURLConnection)new URL(mUrl + endpoint + queryString).openConnection();
+
         }
         catch (IOException e) { throw new HpsException(e.getMessage(), e); }
 
@@ -70,34 +72,41 @@ public abstract class HpsRestGatewayService {
         String result = "";
 
         try {
-            byte[] encoded = Base64.encodeBase64(servicesConfig.getSecretAPIKey().getBytes());
-            String auth = String.format("Basic %s", new String(encoded));
 
-            conn.setDoOutput(true);
             conn.setDoInput(true);
             conn.setRequestMethod(verb);
-            conn.addRequestProperty("Authorization", auth);
             conn.addRequestProperty("Content-Type", "application/json");
 
-            if(data != null) {
-                String payload = gson.toJson(data);
-                System.out.println(payload);
+            //Headers
+            if(additionalHeaders != null) {
+                for (Map.Entry<String, String> entry : additionalHeaders.entrySet()) {
+                    conn.addRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
 
-                byte[] bytes = payload.getBytes();
+            //Payload
+            if (!verb.equals("GET"))
+            {
+                if(data != null) {
+                    String payload = gson.toJson(data);
+                    System.out.println(payload);
 
-                conn.addRequestProperty("Content-Length", String.format("%s", bytes.length));
+                    byte[] bytes = payload.getBytes();
 
-                DataOutputStream requestStream = new DataOutputStream(conn.getOutputStream());
-                requestStream.write(bytes);
-                requestStream.flush();
-                requestStream.close();
+                    conn.setDoOutput(true);
+                    conn.addRequestProperty("Content-Length", String.format("%s", bytes.length));
+
+                    DataOutputStream requestStream = new DataOutputStream(conn.getOutputStream());
+                    requestStream.write(bytes);
+                    requestStream.flush();
+                    requestStream.close();
+                }
             }
 
             InputStream responseStream = conn.getInputStream();
             result += new String(IOUtils.readFully(responseStream, conn.getContentLength(), true));
             System.out.println(result);
             responseStream.close();
-            resetPagination();
 
             return result;
         }

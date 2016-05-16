@@ -1,6 +1,8 @@
 package com.hps.integrator.tests.testdata;
 
 import com.hps.integrator.abstractions.IHpsServicesConfig;
+import com.hps.integrator.services.HpsOrcaServiceConfig;
+import com.hps.integrator.services.HpsPayPlanServiceConfig;
 import com.hps.integrator.services.HpsServicesConfig;
 
 public class TestServicesConfig {
@@ -40,9 +42,24 @@ public class TestServicesConfig {
         return config;
     }
 
-    public static IHpsServicesConfig validPayPlanConfig() {
-        HpsServicesConfig config = new HpsServicesConfig();
+    public static HpsPayPlanServiceConfig validPayPlanConfig() {
+        HpsPayPlanServiceConfig config = new HpsPayPlanServiceConfig();
         config.setSecretAPIKey("skapi_uat_MY5OAAAUrmIFvLDRpO_ufLlFQkgg0Rms2G8WoI1THQ");
+        return config;
+    }
+
+    public static HpsOrcaServiceConfig validOrcaConfig() {
+        HpsOrcaServiceConfig config = new HpsOrcaServiceConfig();
+        config.setDeviceId(5315938);
+        config.setLicenseId(101433);
+        config.setPassword("$Test1234");
+        config.setUserName("777700857994");
+        config.setSiteId(101436);
+        config.setSiteTrace("trace0001");
+        config.setVersionNumber("1234");
+        config.ApplicationId = "Mobuyle Retail";
+        config.HardwareTypeName = "Heartland Mobuyle";
+        config.IsTest = true;
 
         return config;
     }

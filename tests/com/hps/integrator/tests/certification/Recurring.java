@@ -43,7 +43,7 @@ public class Recurring {
     private static String identifierBase = "%s-%s" + UUID.randomUUID().toString().substring(0, 10);
 
     public Recurring() throws HpsException {
-        HpsServicesConfig config = new HpsServicesConfig();
+        HpsPayPlanServiceConfig config = new HpsPayPlanServiceConfig();
         config.setSecretAPIKey("skapi_cert_MTyMAQBiHVEAewvIzXVFcmUd2UcyBge_eCpaASUp0A");
 
         this.service = new HpsPayPlanService(config);
@@ -180,7 +180,7 @@ public class Recurring {
         paymentMethod.setPaymentMethodType(HpsPayPlanPaymentMethodType.ACH);
         paymentMethod.setAchType("Checking");
         paymentMethod.setAccountType("Personal");
-        paymentMethod.setTelephoneIndicator(0);
+        paymentMethod.setTelephoneIndicator(false);
         paymentMethod.setRoutingNumber("490000018");
         paymentMethod.setNameOnAccount("John Doe");
         paymentMethod.setDriversLicenseNumber("7418529630");
@@ -207,7 +207,7 @@ public class Recurring {
         paymentMethod.setPaymentMethodType(HpsPayPlanPaymentMethodType.ACH);
         paymentMethod.setAchType("Checking");
         paymentMethod.setAccountType("Business");
-        paymentMethod.setTelephoneIndicator(0);
+        paymentMethod.setTelephoneIndicator(false);
         paymentMethod.setRoutingNumber("490000018");
         paymentMethod.setNameOnAccount("Acme Co");
         paymentMethod.setDriversLicenseNumber("3692581470");
@@ -236,7 +236,7 @@ public class Recurring {
         paymentMethod.setPaymentMethodType(HpsPayPlanPaymentMethodType.ACH);
         paymentMethod.setAchType("Checking");
         paymentMethod.setAccountType("Personal");
-        paymentMethod.setTelephoneIndicator(0);
+        paymentMethod.setTelephoneIndicator(false);
         paymentMethod.setRoutingNumber("490000018");
         paymentMethod.setNameOnAccount("John Doe");
         paymentMethod.setDriversLicenseNumber("7418529630");

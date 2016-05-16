@@ -31,7 +31,7 @@ public class HpsPayPlanPaymentMethod extends HpsPayplanResource {
     String achType;
     String accountType;
     String routingNumber;
-    int telephoneIndicator;
+    Boolean telephoneIndicator;
     String addressLine1;
     String addressLine2;
     String city;
@@ -221,11 +221,11 @@ public class HpsPayPlanPaymentMethod extends HpsPayplanResource {
         this.routingNumber = routingNumber;
     }
 
-    public int getTelephoneIndicator() {
+    public Boolean getTelephoneIndicator() {
         return telephoneIndicator;
     }
 
-    public void setTelephoneIndicator(int telephoneIndicator) {
+    public void setTelephoneIndicator(Boolean telephoneIndicator) {
         this.telephoneIndicator = telephoneIndicator;
     }
 
