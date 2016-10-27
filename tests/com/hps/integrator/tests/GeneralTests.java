@@ -2,11 +2,15 @@ package com.hps.integrator.tests;
 
 import com.hps.integrator.entities.HpsDirectMarketData;
 import com.hps.integrator.entities.HpsTransaction;
-import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.entities.HpsTransactionType;
-import com.hps.integrator.infrastructure.*;
+import com.hps.integrator.entities.credit.*;
+import com.hps.integrator.infrastructure.HpsException;
+import com.hps.integrator.infrastructure.HpsInvalidRequestException;
+import com.hps.integrator.infrastructure.HpsIssuerException;
+import com.hps.integrator.infrastructure.HpsIssuerExceptionCodes;
 import com.hps.integrator.infrastructure.emums.TaxTypeType;
 import com.hps.integrator.services.HpsCreditService;
+import com.hps.integrator.services.HpsServicesConfig;
 import com.hps.integrator.tests.testdata.TestCardHolders;
 import com.hps.integrator.tests.testdata.TestCreditCards;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
@@ -15,10 +19,8 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class GeneralTests {
 
@@ -220,5 +222,19 @@ public class GeneralTests {
         HpsCharge response = service.charge(new BigDecimal("15.15"), "usd", card, null, false);
         assertNotNull(response);
         assertEquals("00", response.getResponseCode());
+    }
+
+    @Test
+    public void List_WhenSecretKeyNeedsTRimming_ShouldListTransactions() throws HpsException {
+        Calendar start = Calendar.getInstance();
+        start.add(Calendar.DAY_OF_MONTH, -10);
+
+        // add some spaces to the secret API key.
+        HpsServicesConfig config = (HpsServicesConfig) TestServicesConfig.validServicesConfig();
+        config.setSecretAPIKey("   skapi_cert_MYl2AQAowiQAbLp5JesGKh7QFkcizOP2jcX9BrEMqQ   ");
+
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
+        HpsReportTransactionSummary[] items = service.list(start.getTime(), new Date());
+        assertNotNull(items);
     }
 }

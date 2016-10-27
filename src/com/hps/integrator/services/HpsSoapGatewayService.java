@@ -232,7 +232,7 @@ public abstract class HpsSoapGatewayService {
         if(details != null) {
             Element addons = Et.element("AdditionalTxnFields");
             if (details.getMemo() != null)
-                Et.subElement(addons, "Descritpion").text(details.getMemo());
+                Et.subElement(addons, "Description").text(details.getMemo());
             if (details.getCustomerId() != null)
                 Et.subElement(addons, "CustomerID").text(details.getCustomerId());
             if (details.getInvoiceNumber() != null)

@@ -93,7 +93,7 @@ public class HpsServicesConfig implements IHpsServicesConfig {
 	}
 	
 	public void setSecretAPIKey(String secretAPIKey) {
-		this.secretAPIKey = secretAPIKey;
+		this.secretAPIKey = secretAPIKey.trim();
 	}
 
 	public String getCredentialToken() {

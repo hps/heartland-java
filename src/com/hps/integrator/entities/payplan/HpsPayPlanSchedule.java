@@ -6,8 +6,10 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 public class HpsPayPlanSchedule extends HpsPayplanResource {
     String scheduleKey;
@@ -39,7 +41,7 @@ public class HpsPayPlanSchedule extends HpsPayplanResource {
     Integer numberOfPaymentsRemaining;
     @FormatDate
     String cancellationDate;
-    String scheduleStarted;
+    String scheduleStarted = "false";
 
     public HpsPayPlanSchedule(){
         this.emailReceipt = "Never";
@@ -263,28 +265,33 @@ public class HpsPayPlanSchedule extends HpsPayplanResource {
     }
 
     private String[] getEditableFields() {
-        return new String[] {
-                "scheduleName",
-                "scheduleStatus",
-                "deviceId",
-                "paymentMethodKey",
-                "subtotalAmount",
-                "taxAmount",
-                "numberOfPaymentsRemaining",
-                "endDate",
-                "cancellationDate",
-                "reprocessingCount",
-                "emailReceipt",
-                "emailAdvanceNotice",
-                "processingDateInfo",
-                // Only editable when scheduleStarted = false
-                "scheduleIdentifier",
-                "startDate",
-                "frequency",
-                "duration",
-                // Only editable when scheduleStarted = true
-                "nextProcessingDate",
-        };
+        List<String> list = new ArrayList<String>();
+
+        list.add("scheduleName");
+        list.add("scheduleStatus");
+        list.add("deviceId");
+        list.add("paymentMethodKey");
+        list.add("subtotalAmount");
+        list.add("taxAmount");
+        list.add("numberOfPaymentsRemaining");
+        list.add("endDate");
+        list.add("cancellationDate");
+        list.add("reprocessingCount");
+        list.add("emailReceipt");
+        list.add("emailAdvanceNotice");
+        list.add("processingDateInfo");
+
+        if(this.scheduleStarted.equals("false")) {
+            list.add("scheduleIdentifier");
+            list.add("startDate");
+            list.add("frequency");
+            list.add("duration");
+        }
+        else {
+            list.add("nextProcessingDate");
+        }
+
+        return list.toArray(new String[list.size()]);
     }
 
     public HashMap<String, Object> getEditableFieldsWithValues() throws HpsException {

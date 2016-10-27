@@ -1,7 +1,7 @@
 package com.hps.integrator.tests.testdata;
 
 import com.hps.integrator.abstractions.IHpsServicesConfig;
-import com.hps.integrator.services.HpsOrcaServiceConfig;
+import com.hps.integrator.services.HpsActivationServiceConfig;
 import com.hps.integrator.services.HpsPayPlanServiceConfig;
 import com.hps.integrator.services.HpsServicesConfig;
 
@@ -48,8 +48,8 @@ public class TestServicesConfig {
         return config;
     }
 
-    public static HpsOrcaServiceConfig validOrcaConfig() {
-        HpsOrcaServiceConfig config = new HpsOrcaServiceConfig();
+    public static HpsActivationServiceConfig validActivationConfig() {
+        HpsActivationServiceConfig config = new HpsActivationServiceConfig();
         config.setDeviceId(5315938);
         config.setLicenseId(101433);
         config.setPassword("$Test1234");
