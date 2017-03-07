@@ -15,6 +15,10 @@ public class TestCreditCards {
         return card;
     }
 
+    public static String validVisaMUT() {
+        return "CT25M708HKe55S4a613i0016";
+    }
+
     public static HpsCreditCard validVisaNoCvv() {
         HpsCreditCard card = validVisa();
         card.setCvv(null);
@@ -121,6 +125,10 @@ public class TestCreditCards {
         return card;
     }
 
+    public static String validMasterCardMUT() {
+        return "w4nucu08708ScCxlFCPM0014";
+    }
+
     public static HpsCreditCard validMasterCardNoCvv() {
         HpsCreditCard card = validMasterCard();
         card.setCvv(null);
@@ -138,6 +146,10 @@ public class TestCreditCards {
         return card;
     }
 
+    public static String validDiscoverMUT() {
+        return "Hl4mgB08bzY3CEIoHfaa6527";
+    }
+
     public static HpsCreditCard validDiscoverNoCvv() {
         HpsCreditCard card = validDiscover();
         card.setCvv(null);
@@ -153,6 +165,10 @@ public class TestCreditCards {
         card.setNumber("372700699251018");
 
         return card;
+    }
+
+    public static String validAmexMUT() {
+        return "DhIQTo08cwS7f5NG5dHC1018";
     }
 
     public static HpsCreditCard validAmexNoCvv() {
@@ -187,5 +203,13 @@ public class TestCreditCards {
         card.setNumber("12345");
 
         return card;
+    }
+
+    public static String invalidMUT() {
+        return "Hl4mgB08bzY3CEIoHfsdfsdfdsfaa6527";
+    }
+
+    public static String nullMUT() {
+        return null;
     }
 }

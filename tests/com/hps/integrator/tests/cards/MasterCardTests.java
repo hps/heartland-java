@@ -517,6 +517,13 @@ public class MasterCardTests {
         HpsTransaction voidResult = service.voidTxn(charge.getTransactionID());
         assertEquals("00", voidResult.getResponseCode());
     }
+
+	@Test
+	public void Mastercard_UpdateTokenExpiration_ShouldReturnOk() throws HpsException {
+		HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+		HpsManageToken manage = service.updateTokenExpiration(TestCreditCards.validMasterCardMUT(), 1, 2019);
+		assertEquals("00", manage.getResponseCode());
+	}
 	
 	private HpsCharge chargeValidMasterCard(BigDecimal amt) throws HpsException
 	{

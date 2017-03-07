@@ -2,6 +2,7 @@ package com.hps.integrator.fluent;
 
 import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsTokenData;
 import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransactionDetails;
 import com.hps.integrator.entities.credit.*;
@@ -14,7 +15,7 @@ import java.math.BigDecimal;
 
 public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsAccountVerify> {
     private HpsCreditCard card;
-    private String token;
+    private HpsTokenData token;
     private HpsTrackData trackData;
     private HpsCardHolder cardHolder;
     private boolean requestMultiUseToken = false;
@@ -27,6 +28,13 @@ public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
         return this;
     }
     public CreditVerifyBuilder withToken(String token){
+        if (this.token == null) {
+            this.token = new HpsTokenData();
+        }
+        this.token.setTokenValue(token);
+        return this;
+    }
+    public CreditVerifyBuilder withToken(HpsTokenData token){
         this.token = token;
         return this;
     }
@@ -75,8 +83,11 @@ public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
             if(card.getEncryptionData() != null)
                 cardData.append(service.hydrateEncryptionData(card.getEncryptionData()));
         }
-        else if(token != null)
-            cardData.append(service.hydrateTokenData(token, cardPresent, readerPresent));
+        else if(token != null) {
+            this.token.setCardPresent(cardPresent);
+            this.token.setReaderPresent(readerPresent);
+            cardData.append(service.hydrateTokenData(token));
+        }
         else if(trackData != null) {
             cardData.append(service.hydrateTrackData(trackData));
             if(trackData.getEncryptionData() != null)

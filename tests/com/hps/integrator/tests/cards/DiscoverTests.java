@@ -1,10 +1,7 @@
 package com.hps.integrator.tests.cards;
 
 import com.hps.integrator.entities.HpsTransaction;
-import com.hps.integrator.entities.credit.HpsAccountVerify;
-import com.hps.integrator.entities.credit.HpsAuthorization;
-import com.hps.integrator.entities.credit.HpsCharge;
-import com.hps.integrator.entities.credit.HpsReportTransactionDetails;
+import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.infrastructure.HpsIssuerException;
 import com.hps.integrator.infrastructure.HpsIssuerExceptionCodes;
 import com.hps.integrator.infrastructure.HpsException;
@@ -517,6 +514,13 @@ public class DiscoverTests {
         HpsTransaction voidResult = service.voidTxn(charge.getTransactionID());
         assertEquals("00", voidResult.getResponseCode());
     }
+
+	@Test
+	public void Discover_UpdateTokenExpiration_ShouldReturnOk() throws HpsException {
+		HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+		HpsManageToken manage = service.updateTokenExpiration(TestCreditCards.validDiscoverMUT(), 1, 2019);
+		assertEquals("00", manage.getResponseCode());
+	}
 
 	public HpsCharge chargeValidDiscover(BigDecimal amt) throws HpsException
 	{

@@ -376,10 +376,31 @@ public abstract class HpsSoapGatewayService {
     }
 
     public Element hydrateTokenData(String token, boolean cardPresent, boolean readerPresent) {
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        tokenData.setCardPresent(cardPresent);
+        tokenData.setReaderPresent(readerPresent);
+
+        return this.hydrateTokenData(tokenData);
+    }
+
+    public Element hydrateTokenData(HpsTokenData token) {
         Element tokenData = Et.element("TokenData");
-        Et.subElement(tokenData, "TokenValue").text(token);
-        Et.subElement(tokenData, "CardPresent").text(cardPresent ? "Y" : "N");
-        Et.subElement(tokenData, "ReaderPresent").text(readerPresent ? "Y" : "N");
+        Et.subElement(tokenData, "TokenValue").text(token.getTokenValue());
+        Et.subElement(tokenData, "CardPresent").text(token.getCardPresent() ? "Y" : "N");
+        Et.subElement(tokenData, "ReaderPresent").text(token.getReaderPresent() ? "Y" : "N");
+
+        if (token.getCvv() != null) {
+            Et.subElement(tokenData, "CVV2").text(token.getCvv());
+        }
+
+        if (token.getExpMonth() != null) {
+            Et.subElement(tokenData, "ExpMonth").text(token.getExpMonth().toString());
+        }
+
+        if (token.getExpYear() != null) {
+            Et.subElement(tokenData, "ExpYear").text(token.getExpYear().toString());
+        }
 
         return tokenData;
     }

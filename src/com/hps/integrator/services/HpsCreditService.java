@@ -13,6 +13,7 @@ import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -65,7 +66,19 @@ public class HpsCreditService extends HpsSoapGatewayService {
     }
 
     public HpsCharge charge(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
-        return charge(amount, currency, token, cardHolder, allowDuplicates, false, null, null, null, false, false, false);
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        return charge(amount, currency, tokenData, cardHolder, allowDuplicates, false, null, null, null, false);
+    }
+
+    public HpsCharge charge(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates,
+                            boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details,
+                            HpsDirectMarketData directMarketData, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        tokenData.setCardPresent(cardPresent);
+        tokenData.setReaderPresent(readerPresent);
+        return charge(amount, currency, tokenData, cardHolder, allowDuplicates, false, null, null, null, false);
     }
 
     public HpsCharge charge(PaymentData paymentData, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
@@ -141,9 +154,9 @@ public class HpsCreditService extends HpsSoapGatewayService {
      * @return The HPS Charge
      * @throws HpsException
      */
-    public HpsCharge charge(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates,
+    public HpsCharge charge(BigDecimal amount, String currency, HpsTokenData token, HpsCardHolder cardHolder, boolean allowDuplicates,
                             boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details,
-                            HpsDirectMarketData directMarketData, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
+                            HpsDirectMarketData directMarketData, boolean cpcRequest) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
@@ -157,7 +170,7 @@ public class HpsCreditService extends HpsSoapGatewayService {
 
         Element cardData = Et.subElement(block1, "CardData");
         if(token != null)
-            cardData.append(hydrateTokenData(token, cardPresent, readerPresent));
+            cardData.append(hydrateTokenData(token));
 
         if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
         Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
@@ -240,14 +253,26 @@ public class HpsCreditService extends HpsSoapGatewayService {
     }
 
     public HpsAccountVerify verify(String token) throws HpsException {
-        return this.verify(token, null, false, false, false);
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        return this.verify(tokenData, null, false);
     }
 
     public HpsAccountVerify verify(String token, HpsCardHolder cardHolder) throws HpsException {
-        return this.verify(token, cardHolder, false, false, false);
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        return this.verify(tokenData, cardHolder, false);
     }
 
     public HpsAccountVerify verify(String token, HpsCardHolder cardHolder, boolean requestMultiUseToken, boolean cardPresent, boolean readerPresent) throws HpsException {
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        tokenData.setCardPresent(cardPresent);
+        tokenData.setReaderPresent(readerPresent);
+        return this.verify(tokenData, cardHolder, requestMultiUseToken);
+    }
+
+    public HpsAccountVerify verify(HpsTokenData token, HpsCardHolder cardHolder, boolean requestMultiUseToken) throws HpsException {
         Element transaction = Et.element("CreditAccountVerify");
         Element block1 = Et.subElement(transaction, "Block1");
 
@@ -255,7 +280,7 @@ public class HpsCreditService extends HpsSoapGatewayService {
             block1.append(hydrateCardHolder(cardHolder));
 
         Element cardData = Et.subElement(block1, "CardData");
-        cardData.append(hydrateTokenData(token, cardPresent, readerPresent));
+        cardData.append(hydrateTokenData(token));
 
         Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
         ElementTree response = submitTransaction(transaction, clientTransactionId);
@@ -267,7 +292,18 @@ public class HpsCreditService extends HpsSoapGatewayService {
     }
 
     public HpsAuthorization authorize(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
-        return this.authorize(amount, currency, token, cardHolder, allowDuplicates, false, null, null, false, false, false);
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        return this.authorize(amount, currency, tokenData, cardHolder, allowDuplicates, false, null, null, false);
+    }
+
+    public HpsAuthorization authorize(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates,
+                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
+        HpsTokenData tokenData = new HpsTokenData();
+        tokenData.setTokenValue(token);
+        tokenData.setCardPresent(cardPresent);
+        tokenData.setReaderPresent(readerPresent);
+        return this.authorize(amount, currency, tokenData, cardHolder, allowDuplicates, requestMultiUseToken, descriptor, details, cpcRequest);
     }
 
     public HpsAuthorization authorize(PaymentData paymentData, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
@@ -338,8 +374,8 @@ public class HpsCreditService extends HpsSoapGatewayService {
      * @return The HPS Authorization
      * @throws HpsException
      */
-    public HpsAuthorization authorize(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates,
-                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest, boolean cardPresent, boolean readerPresent) throws HpsException {
+    public HpsAuthorization authorize(BigDecimal amount, String currency, HpsTokenData token, HpsCardHolder cardHolder, boolean allowDuplicates,
+                                      boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest) throws HpsException {
         HpsInputValidation.checkAmount(amount);
         HpsInputValidation.checkCurrency(currency);
 
@@ -351,7 +387,7 @@ public class HpsCreditService extends HpsSoapGatewayService {
             block1.append(hydrateCardHolder(cardHolder));
 
         Element cardData = Et.subElement(block1, "CardData");
-        cardData.append(hydrateTokenData(token, cardPresent, readerPresent));
+        cardData.append(hydrateTokenData(token));
 
         if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
         Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
@@ -602,6 +638,65 @@ public class HpsCreditService extends HpsSoapGatewayService {
         trans.setResponseCode("00");
         trans.setResponseText("");
         return trans;
+    }
+
+    /**
+     * Set the expiration date on a tokenized credit card
+     * @param token
+     * @param expMonth
+     * @param expYear
+     * @return
+     * @throws HpsException
+     */
+    public HpsManageToken updateTokenExpiration(String token, Integer expMonth, Integer expYear) throws HpsException {
+        Element transaction = Et.element("ManageTokens");
+        Et.subElement(transaction, "TokenValue").text(token);
+        Element actions = Et.subElement(transaction, "TokenActions");
+        Element set = Et.subElement(actions, "Set");
+
+        Element attribute1 = Et.subElement(set, "Attribute");
+        Et.subElement(attribute1, "Name").text("ExpMonth");
+        Et.subElement(attribute1, "Value").text("" + expMonth);
+
+        Element attribute2 = Et.subElement(set, "Attribute");
+        Et.subElement(attribute2, "Name").text("ExpYear");
+        Et.subElement(attribute2, "Value").text("" + expYear);
+
+        ElementTree rsp = this.doTransaction(transaction, null);
+
+        this.processGatewayResponse(rsp, transaction.tag(), null);
+
+        HpsManageToken response = new HpsManageToken().fromElementTree(rsp);
+
+        response.setResponseCode("00");
+        response.setResponseText("");
+
+        return response;
+    }
+
+
+    /**
+     * Delete a tokenized credit card
+     * @param token
+     * @return
+     * @throws HpsException
+     */
+    public HpsManageToken deleteToken(String token) throws HpsException {
+        Element transaction = Et.element("ManageTokens");
+        Et.subElement(transaction, "TokenValue").text(token);
+        Element actions = Et.subElement(transaction, "TokenActions");
+        Et.subElement(actions, "Delete");
+
+        ElementTree rsp = this.doTransaction(transaction, null);
+
+        this.processGatewayResponse(rsp, transaction.tag(), null);
+
+        HpsManageToken response = new HpsManageToken().fromElementTree(rsp);
+
+        response.setResponseCode("00");
+        response.setResponseText("");
+
+        return response;
     }
 
     public ElementTree submitTransaction(Element transaction) throws HpsException {

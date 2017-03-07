@@ -2,6 +2,7 @@ package com.hps.integrator.fluent;
 
 import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsTokenData;
 import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransactionDetails;
 import com.hps.integrator.entities.credit.*;
@@ -16,7 +17,7 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
     private BigDecimal amount;
     private String currency;
     private HpsCreditCard card;
-    private String token;
+    private HpsTokenData token;
     private HpsTrackData trackData;
     private HpsCardHolder cardHolder;
     private boolean requestMultiUseToken = false;
@@ -46,6 +47,13 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
         return this;
     }
     public CreditChargeBuilder withToken(String token){
+        if (this.token == null) {
+            this.token = new HpsTokenData();
+        }
+        this.token.setTokenValue(token);
+        return this;
+    }
+    public CreditChargeBuilder withToken(HpsTokenData token){
         this.token = token;
         return this;
     }
@@ -135,8 +143,11 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
             if(card.getEncryptionData() != null)
                 cardData.append(service.hydrateEncryptionData(card.getEncryptionData()));
         }
-        if(token != null)
-            cardData.append(service.hydrateTokenData(token, cardPresent, readerPresent));
+        if(token != null) {
+            this.token.setCardPresent(cardPresent);
+            this.token.setReaderPresent(readerPresent);
+            cardData.append(service.hydrateTokenData(token));
+        }
         if(trackData != null) {
             cardData.append(service.hydrateTrackData(trackData));
             if(trackData.getEncryptionData() != null)
@@ -189,6 +200,7 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
         if(card != null) count++;
         if(trackData != null) count++;
         if(token != null) count++;
+        if(paymentData != null) count++;
 
         return count == 1;
     }

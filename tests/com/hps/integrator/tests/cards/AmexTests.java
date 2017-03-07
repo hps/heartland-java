@@ -4,10 +4,12 @@ import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.credit.HpsAccountVerify;
 import com.hps.integrator.entities.credit.HpsAuthorization;
 import com.hps.integrator.entities.credit.HpsCharge;
+import com.hps.integrator.entities.credit.HpsManageToken;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.HpsIssuerException;
 import com.hps.integrator.infrastructure.HpsIssuerExceptionCodes;
 import com.hps.integrator.services.HpsCreditService;
+import com.hps.integrator.services.HpsServicesConfig;
 import com.hps.integrator.tests.testdata.TestCardHolders;
 import com.hps.integrator.tests.testdata.TestCreditCards;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
@@ -304,6 +306,13 @@ public class AmexTests {
 
         HpsTransaction voidResult = service.voidTxn(charge.getTransactionID());
         assertEquals("00", voidResult.getResponseCode());
+    }
+
+    @Test
+    public void Amex_UpdateTokenExpiration_ShouldReturnOk() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        HpsManageToken manage = service.updateTokenExpiration(TestCreditCards.validAmexMUT(), 1, 2019);
+        assertEquals("00", manage.getResponseCode());
     }
 
     private HpsCharge chargeValidAmex(BigDecimal amt) throws HpsException {

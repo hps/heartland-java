@@ -4,10 +4,7 @@ import com.hps.integrator.entities.HpsDirectMarketData;
 import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.HpsTransactionType;
 import com.hps.integrator.entities.credit.*;
-import com.hps.integrator.infrastructure.HpsException;
-import com.hps.integrator.infrastructure.HpsInvalidRequestException;
-import com.hps.integrator.infrastructure.HpsIssuerException;
-import com.hps.integrator.infrastructure.HpsIssuerExceptionCodes;
+import com.hps.integrator.infrastructure.*;
 import com.hps.integrator.infrastructure.emums.TaxTypeType;
 import com.hps.integrator.services.HpsCreditService;
 import com.hps.integrator.services.HpsServicesConfig;
@@ -236,5 +233,51 @@ public class GeneralTests {
         HpsCreditService service = new HpsCreditService(TestServicesConfig.validServicesConfig(), true);
         HpsReportTransactionSummary[] items = service.list(start.getTime(), new Date());
         assertNotNull(items);
+    }
+
+    @Test
+    public void UpdateTokenExpiration_ExpiredDate_ShouldReturnOk() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        HpsManageToken manage = service.updateTokenExpiration(TestCreditCards.validVisaMUT(), 1, 2009);
+        assertEquals("00", manage.getResponseCode());
+    }
+
+    @Test(expected = HpsGatewayException.class)
+    public void UpdateTokenExpiration_BadYear_ShouldThrowException() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        service.updateTokenExpiration(TestCreditCards.validVisaMUT(), null, 19);
+    }
+
+    @Test(expected = HpsGatewayException.class)
+    public void UpdateTokenExpiration_NullDate_ShouldThrowException() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        service.updateTokenExpiration(TestCreditCards.validVisaMUT(), null, null);
+    }
+
+    @Test(expected = HpsGatewayException.class)
+    public void UpdateTokenExpiration_InvalidToken_ShouldThrowException() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        service.updateTokenExpiration(TestCreditCards.invalidMUT(), 1, 2019);
+    }
+
+    @Test(expected = HpsGatewayException.class)
+    public void UpdateTokenExpiration_NullToken_ShouldThrowException() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        service.updateTokenExpiration(TestCreditCards.nullMUT(), 1, 2019);
+    }
+
+    @Test
+    public void DeleteToken_ShouldReturnOk() throws HpsException {
+        HpsCreditService service = new HpsCreditService(TestServicesConfig.validCertMultiUseConfig());
+        HpsCreditCard card = TestCreditCards.validVisa();
+        card.setNumber("4111111111111111");
+        HpsAccountVerify verify = service.verify(card, null, true, false, false);
+        assertEquals("85", verify.getResponseCode());
+        assertNotNull(verify.getTokenData());
+        assertNotNull(verify.getTokenData().getTokenValue());
+        assertNotEquals("", verify.getTokenData().getTokenValue());
+
+        HpsManageToken manage = service.deleteToken(verify.getTokenData().getTokenValue());
+        assertEquals("00", manage.getResponseCode());
     }
 }

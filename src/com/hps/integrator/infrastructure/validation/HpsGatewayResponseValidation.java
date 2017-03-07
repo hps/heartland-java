@@ -18,6 +18,9 @@ public class HpsGatewayResponseValidation {
                 return new HpsGatewayException(HpsExceptionCodes.NoOpenBatch, responseText, responseCode, responseText);
             case 12:
                 return new HpsGatewayException(HpsExceptionCodes.InvalidCpcData, "Invalid CPC data.", responseCode, responseText);
+            case 27:
+            case 34:
+            case 26:
             case 13:
                 return new HpsGatewayException(HpsExceptionCodes.InvalidCardData, "Invalid card data.", responseCode, responseText);
             case 14:
@@ -34,7 +37,7 @@ public class HpsGatewayResponseValidation {
         HpsException e = getException(header.getInt("GatewayRspCode"), header.getString("GatewayRspMsg"));
         if (e != null) { throw e; }
 
-        if(!response.get("Transaction").has(tagName))
+        if(response.get("Transaction") != null && !response.get("Transaction").has(tagName))
             throw new HpsGatewayException(HpsExceptionCodes.UnexpectedGatewayResponse, "Unexpected response from HPS gateway.");
     }
 }

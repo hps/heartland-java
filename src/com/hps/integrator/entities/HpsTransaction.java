@@ -152,14 +152,20 @@ public class HpsTransaction {
         this.setTransactionID(header.getInt("GatewayTxnId"));
         this.setClientTransactionId(clientTransactionId);
 
-        Element item = rsp.get("Transaction").firstChild();
-        if(item != null) {
-            if(item.has("RspCode"))
-                this.setResponseCode(item.getString("RspCode"));
-            if(item.has("RspText"))
-                this.setResponseText(item.getString("RspText"));
-            if(item.has("RefNbr"))
-                this.setReferenceNumber(item.getString("RefNbr"));
+        Element transaction = rsp.get("Transaction");
+        if (transaction != null) {
+            Element item = transaction.firstChild();
+            if (item != null) {
+                if (item.has("RspCode")) {
+                    this.setResponseCode(item.getString("RspCode"));
+                }
+                if (item.has("RspText")) {
+                    this.setResponseText(item.getString("RspText"));
+                }
+                if (item.has("RefNbr")) {
+                    this.setReferenceNumber(item.getString("RefNbr"));
+                }
+            }
         }
 
         return this;
