@@ -337,7 +337,12 @@ public abstract class HpsSoapGatewayService {
             return null;
 
         Element se_element = Et.element("SecureECommerce");
-        Et.subElement(se_element, "TypeOfPaymentData").text(paymentData.getPaymentDataTye());
+        if (paymentData.getPaymentDataTye().equals("ApplePay")) {
+            Et.subElement(se_element, "TypeOfPaymentData").text("3DSecure");
+        } else {
+            Et.subElement(se_element, "TypeOfPaymentData").text(paymentData.getPaymentDataTye());
+        }
+        Et.subElement(se_element, "PaymentDataSource").text("ApplePay");
 
         Element pd_element = Et.subElement(se_element, "PaymentData").text(paymentData.getOnlinePaymentCryptogram());
         pd_element.set("encoding", EncodingType.base64.getValue());

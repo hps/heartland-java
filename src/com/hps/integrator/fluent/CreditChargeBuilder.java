@@ -158,7 +158,7 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
             Et.subElement(manualEntry, "CardNbr").text(paymentData.getApplicationPrimaryAccountNumber());
             String expDate = paymentData.getApplicationExpirationDate();
             Et.subElement(manualEntry, "ExpMonth").text(expDate.substring(2, 4));
-            Et.subElement(manualEntry, "ExpYear").text(expDate.substring(0, 2));
+            Et.subElement(manualEntry, "ExpYear").text("20" + expDate.substring(0, 2));
             cardData.append(manualEntry);
 
             block1.append(service.hydrateSecureECommerce(paymentData.getPaymentData()));

@@ -2,12 +2,14 @@ package com.hps.integrator.tests;
 
 import com.hps.integrator.entities.HpsDirectMarketData;
 import com.hps.integrator.entities.HpsTransaction;
+import com.hps.integrator.entities.HpsTransactionDetails;
 import com.hps.integrator.entities.HpsTransactionType;
 import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.infrastructure.*;
 import com.hps.integrator.infrastructure.emums.TaxTypeType;
 import com.hps.integrator.services.HpsCreditService;
 import com.hps.integrator.services.HpsServicesConfig;
+import com.hps.integrator.services.fluent.HpsFluentCreditService;
 import com.hps.integrator.tests.testdata.TestCardHolders;
 import com.hps.integrator.tests.testdata.TestCreditCards;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
@@ -279,5 +281,33 @@ public class GeneralTests {
 
         HpsManageToken manage = service.deleteToken(verify.getTokenData().getTokenValue());
         assertEquals("00", manage.getResponseCode());
+    }
+
+    @Test
+    public void FluentCreditService_ChargeMultiUseToken_SHouldReturnOk() throws HpsException {
+        HpsFluentCreditService service = new HpsFluentCreditService(TestServicesConfig.validCertMultiUseConfig(), true);
+        HpsCreditCard card = TestCreditCards.validVisa();
+        card.setNumber("4111111111111111");
+        HpsAccountVerify verify = service.verify()
+                .withCard(card)
+                .withRequestMultiUseToken(true)
+                .execute();
+        assertEquals("85", verify.getResponseCode());
+        assertNotNull(verify.getTokenData());
+        assertNotNull(verify.getTokenData().getTokenValue());
+        assertNotEquals("", verify.getTokenData().getTokenValue());
+
+        HpsTransactionDetails details = new HpsTransactionDetails("1234", "1234", "1234");
+        details.setClientTransactionId("1234567890");
+
+        HpsCharge charge = service.charge()
+                .withAmount(new BigDecimal(2))
+                .withAllowPartialAuth(false)
+                .withCurrency("USD")
+                .withToken(verify.getTokenData())
+                .withDetails(details)
+                .execute();
+        assertNotNull(charge);
+        assertEquals("00", charge.getResponseCode());
     }
 }

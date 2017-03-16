@@ -27,14 +27,22 @@ You are not alone! If you have any questions while you are working through your 
  
  
 ## Requirements
+
  1. Java 1.7
  2. ApplePay MerchantID Certificate in p12 format
  3. [PCI DSS TLS 1.1+ Capability](https://cdn2.hubspot.net/hubfs/281302/Migrating_from_SSL_and_Early_TLS_-v12.pdf?t=1473353189573)
  
- 
 ## Installation
 
 Download and unzip or, using Git, [clone the repository](https://help.github.com/articles/cloning-a-repository/) where our [Java SDK](https://github.com/hps/heartland-java) is located on Github. Link in the project using the IDE of your choice and run! Because this SDK uses [Maven](https://maven.apache.org/what-is-maven.html) your build process should automatically download the external dependencies needed to build your application.
+
+### Project Setup
+
+When adding the SDK to your project, you may need to follow these additional steps:
+
+1. Upgrade to the latest version of the Heartland SDK
+2. Add a new repository for the [`ksoap2-android` library](http://simpligility.github.io/ksoap2-android/getting-started.html) so that the dependency is resolved
+3. Install the “Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files” for your JDK. See [Java documentation](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html) for more details.
 
 ## API Keys
 

@@ -69,6 +69,10 @@ public class TestData {
         return new PaymentData(PAYMENT_DATA_VISA_DECRYPTED_JSON);
     }
 
+    public static PaymentData Visa3DSecurePaymentData() throws HpsException {
+        return new PaymentData(PAYMENT_DATA_VISA_DECRYPTED_JSON_3DSecure);
+    }
+
     public static PaymentData AmexPaymentData() throws HpsException {
         return new PaymentData(PAYMENT_DATA_AMEX_DECRYPTED_JSON);
     }
