@@ -21,7 +21,7 @@ This SDK makes it easy to integrate your Java application with Heartland's [**Po
 | [![](http://developer.heartlandpaymentsystems.com/Resource/Download/sdk-readme-icon-secure)](#data-security)  | [![](http://developer.heartlandpaymentsystems.com/Resource/Download/sdk-readme-icon-resources)](#documentation-and-examples)  | [![](http://developer.heartlandpaymentsystems.com/Resource/Download/sdk-readme-icon-tools)](#certification--testing) | [![](http://developer.heartlandpaymentsystems.com/Resource/Download/sdk-readme-icon-keys)](#api-keys) | <a href="http://developer.heartlandpaymentsystems.com/Account/Register" target="_blank">Register an Account</a> <br> <a href="http://www.heartlandpaymentsystems.com/partners/" target="_blank">Partner with Heartland</a> <br> <a href="http://developer.heartlandpaymentsystems.com/SecureSubmit/Support" target="_blank">Developer Support</a>  |
 
 
-####Developer Support
+#### Developer Support
 
 You are not alone! If you have any questions while you are working through your development process, please feel free to <a href="mailto:entapp_devportal@e-hps.com?Subject=Developer Support Request">reach out to our team for assistance</a>.
  
@@ -168,7 +168,7 @@ Testing your implementation in our Certification/Sandbox environment helps to id
 
 *Quick Tip*: You can get a head start on your certification by reviewing the [certification tests](https://github.com/hps/heartland-java/tree/master/tests/com/hps/integrator/tests/certification) in the included test suite.
 
-####Test Card Data
+#### Test Card Data
 
 The following card numbers are used by our Certification environment to verify that your tests worked. Note that while variations (such as 4111111111111111) will work for general testing the cards listed below are required to complete certification.
 
@@ -233,7 +233,7 @@ The following card numbers are used by our Certification environment to verify t
 	</tbody>
 </table>
 
-####Testing Exceptions
+#### Testing Exceptions
 
 During your integration you will want to test for specific issuer responses such as 'Card Declined'. Because our sandbox does not actually reach out to issuers we have devised specific transaction amounts that will trigger  [issuer response codes](https://cert.api2.heartlandportico.com/Gateway/PorticoDevGuide/build/PorticoDeveloperGuide/Issuer%20Response%20Codes.html) and [gateway response codes](https://cert.api2.heartlandportico.com/Gateway/PorticoDevGuide/build/PorticoDeveloperGuide/Gateway%20Response%20Codes.html). Please <a href="mailto:SecureSubmitCert@e-hps.com?subject=Hard Coded Values Spreadsheet Request">contact</a> Heartland for a complete listing of values you can charge to simulate AVS, CVV and Transaction declines, errors, and other responses that you can catch in your code:
 
@@ -274,7 +274,7 @@ All our code is open sourced and we encourage fellow developers to contribute an
 6. Create new Pull Request
 
 
-####Included Test Suite
+#### Included Test Suite
 
 The included test suite can help ensure your contribution doesn't cause unexpected errors and is a terrific resource of working examples that you can reference. As mentioned earlier, the [certification folder](https://github.com/hps/heartland-java/tree/master/tests/com/hps/integrator/tests/certification) contains tests that mirror the types of requirements you will encounter when you certify your integration for production.
 
