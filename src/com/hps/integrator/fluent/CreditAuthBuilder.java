@@ -9,6 +9,7 @@ import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.infrastructure.Element;
 import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
+import com.hps.integrator.infrastructure.validation.HpsInputValidation;
 import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
@@ -33,7 +34,17 @@ public class CreditAuthBuilder extends HpsBuilderAbstract<HpsFluentCreditService
     private BigDecimal gratuity;
     private HpsAutoSubstantiation autoSubstantiation;
     private HpsTxnReferenceData originalTxnReferenceData;
-
+    private BigDecimal convenienceAmount;
+    private BigDecimal shippingAmount;
+    
+    public CreditAuthBuilder withConvenienceAmount(BigDecimal convenienceAmount){
+        this.convenienceAmount = convenienceAmount;
+        return this;
+    }
+    public CreditAuthBuilder withShippingAmount(BigDecimal shippingAmount){
+        this.shippingAmount = shippingAmount;
+        return this;
+    }
     public CreditAuthBuilder withAmount(BigDecimal amount){
         this.amount = amount;
         return this;
@@ -131,6 +142,15 @@ public class CreditAuthBuilder extends HpsBuilderAbstract<HpsFluentCreditService
         Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
         Et.subElement(block1, "AllowPartialAuth").text(allowPartialAuth ? "Y" : "N");
         Et.subElement(block1, "Amt").text(amount.toString());
+        
+        if(convenienceAmount != null){
+        	HpsInputValidation.checkAmount(convenienceAmount);
+            Et.subElement(block1, "ConvenienceAmtInfo").text(convenienceAmount.toString());
+         }
+        if(shippingAmount != null){
+        	HpsInputValidation.checkAmount(shippingAmount);
+        	Et.subElement(block1, "ShippingAmtInfo").text(shippingAmount.toString()); 
+         }  
         if(gratuity != null)
             Et.subElement(block1, "GratuityAmtInfo").text(gratuity.toString());
 

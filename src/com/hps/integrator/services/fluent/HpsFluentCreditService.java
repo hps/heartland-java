@@ -162,7 +162,7 @@ public class HpsFluentCreditService extends HpsSoapGatewayService {
             String responseCode = transaction.getString("RspCode");
             String responseText = transaction.getString("RspText");
 
-            if(responseCode != null) {
+            if(responseCode != null && !responseCode.equals("")) {
                 if(responseCode.equals("91")){
                     try{
                         this.reverse(amount).execute();

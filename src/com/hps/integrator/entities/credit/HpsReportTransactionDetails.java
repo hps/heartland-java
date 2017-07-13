@@ -27,7 +27,21 @@ public class HpsReportTransactionDetails extends HpsAuthorization implements
     private String invoiceNumber;
     private String customerId;
     private HpsCreditExceptions exceptions;
-
+	private BigDecimal convenienceAmount;
+    private BigDecimal shippingAmount;
+    
+    public BigDecimal getConvenienceAmount() {
+		return convenienceAmount;
+	}
+	public void setConvenienceAmount(BigDecimal convenienceAmount) {
+		this.convenienceAmount = convenienceAmount;
+	}
+	public BigDecimal getShippingAmount() {
+		return shippingAmount;
+	}
+	public void setShippingAmount(BigDecimal shippingAmount) {
+		this.shippingAmount = shippingAmount;
+	}
     public BigDecimal getSettlementAmount() {
         return settlementAmount;
     }
@@ -137,7 +151,14 @@ public class HpsReportTransactionDetails extends HpsAuthorization implements
         this.setReferenceNumber(data.getString("RefNbr"));
         this.setResponseCode(data.getString("RspCode"));
         this.setResponseText(data.getString("RspText"));
-        if(data.has("TokenizationMsg")) {
+        
+        if(data.has("ConvenienceAmtInfo")){
+            this.setConvenienceAmount(new BigDecimal(data.getString("ConvenienceAmtInfo")));
+        }
+        if (data.has("ShippingAmtInfo")){
+           this.setShippingAmount(new BigDecimal(data.getString("ShippingAmtInfo")));
+        }
+        if(data.has("TokenizationMsg")){
             this.setTokenData(new HpsTokenData());
             this.getTokenData().setTokenRspMsg(data.getString("TokenizationMsg"));
         }

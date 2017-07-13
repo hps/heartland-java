@@ -11,6 +11,7 @@ import com.hps.integrator.entities.credit.HpsCreditCard;
 import com.hps.integrator.infrastructure.Element;
 import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
+import com.hps.integrator.infrastructure.validation.HpsInputValidation;
 import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
 import java.math.BigDecimal;
@@ -33,7 +34,17 @@ public class CreditOfflineChargeBuilder extends HpsBuilderAbstract<HpsFluentCred
     protected BigDecimal gratuity;
     protected HpsAutoSubstantiation autoSubstantiation;
     protected String offlineAuthCode;
-
+    protected BigDecimal convenienceAmount;
+    protected BigDecimal shippingAmount;
+    
+    public CreditOfflineChargeBuilder withConvenienceAmount(BigDecimal convenienceAmount){
+        this.convenienceAmount = convenienceAmount;
+        return this;
+    }
+    public CreditOfflineChargeBuilder withShippingAmount(BigDecimal shippingAmount){
+        this.shippingAmount = shippingAmount;
+        return this;
+    }
     public CreditOfflineChargeBuilder withAmount(BigDecimal amount){
         this.amount = amount;
         return this;
@@ -115,6 +126,15 @@ public class CreditOfflineChargeBuilder extends HpsBuilderAbstract<HpsFluentCred
         Element block1 = Et.subElement(transaction, "Block1");
         Et.subElement(block1, "AllowDup").text(allowDuplicates ? "Y" : "N");
         Et.subElement(block1, "Amt").text(amount.toString());
+        
+        if(convenienceAmount != null){
+        	HpsInputValidation.checkAmount(convenienceAmount);
+            Et.subElement(block1, "ConvenienceAmtInfo").text(convenienceAmount.toString());
+         }
+        if(shippingAmount != null){
+        	HpsInputValidation.checkAmount(shippingAmount);
+        	Et.subElement(block1, "ShippingAmtInfo").text(shippingAmount.toString()); 
+         }
         if(gratuity != null)
             Et.subElement(block1, "GratuityAmtInfo").text(gratuity.toString());
 
