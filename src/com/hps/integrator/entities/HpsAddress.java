@@ -1,5 +1,9 @@
 package com.hps.integrator.entities;
 
+import com.hps.integrator.infrastructure.HpsInvalidRequestException;
+import com.hps.integrator.infrastructure.emums.AddressFields;
+import com.hps.integrator.infrastructure.validation.HpsInputValidation;
+
 public class HpsAddress {
 
 	private String mAddress;
@@ -21,7 +25,11 @@ public class HpsAddress {
 	}
 	
 	public void setAddress(String address) {
-		this.mAddress = address;
+		try {
+			this.mAddress = HpsInputValidation.cardHolderDetails(address,AddressFields.Address);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String getCity() {
@@ -29,7 +37,11 @@ public class HpsAddress {
 	}
 	
 	public void setCity(String city) {
-		this.mCity = city;
+		try {
+			this.mCity = HpsInputValidation.cardHolderDetails(city,AddressFields.City);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String getState()
@@ -39,7 +51,11 @@ public class HpsAddress {
 	
 	public void setState(String state)
 	{
-		mState = state;
+		try {
+			mState = HpsInputValidation.cardHolderDetails(state,AddressFields.State);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String getZip() {
@@ -47,7 +63,11 @@ public class HpsAddress {
 	}
 	
 	public void setZip(String zip) {
-		this.mZip = zip;
+		try {
+			this.mZip =  HpsInputValidation.checkZipcode(zip);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String getCountry() {

@@ -3,13 +3,13 @@ package com.hps.integrator.terminals.pax.interfaces;
 import com.hps.integrator.abstractions.*;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.HpsMessageException;
-import com.sun.org.apache.xml.internal.security.utils.Base64;
 import sun.misc.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import org.apache.commons.codec.binary.Base64;
 
 public class PaxHttpInterface implements IDeviceCommInterface {
     ITerminalConfiguration _settings;
@@ -33,7 +33,7 @@ public class PaxHttpInterface implements IDeviceCommInterface {
     }
 
     public byte[] send(IDeviceMessage message) throws HpsException {
-        String payload = Base64.encode(message.getSendBuffer()).replace("\r", "").replace("\n", "");
+        String payload = Base64.encodeBase64String(message.getSendBuffer()).replace("\r", "").replace("\n", "");
 
         String endpoint = String.format("http://%s:%d?%s", _settings.getIpAddress(), _settings.getPort(), payload);
         try {

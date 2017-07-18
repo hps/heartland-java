@@ -1,5 +1,9 @@
 package com.hps.integrator.entities;
 
+import com.hps.integrator.infrastructure.HpsInvalidRequestException;
+import com.hps.integrator.infrastructure.emums.AddressFields;
+import com.hps.integrator.infrastructure.validation.HpsInputValidation;
+
 public class HpsConsumer {
     private String firstName;
     private String lastName;
@@ -20,7 +24,11 @@ public class HpsConsumer {
     }
 
     public void setFirstName(String firstName) {
-        this.firstName = firstName;
+       try {
+			this.firstName = HpsInputValidation.cardHolderDetails(firstName, AddressFields.FirstName);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
     }
 
     public String getLastName() {
@@ -28,7 +36,11 @@ public class HpsConsumer {
     }
 
     public void setLastName(String lastName) {
-        this.lastName = lastName;
+       try {
+			this.lastName = HpsInputValidation.cardHolderDetails(lastName, AddressFields.LastName);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
     }
 
     public String getPhone() {
@@ -36,7 +48,11 @@ public class HpsConsumer {
     }
 
     public void setPhone(String phone) {
-        this.phone = phone;
+		try {
+			this.phone = HpsInputValidation.checkPhoneNumber(phone);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}
     }
 
     public String getEmail() {
@@ -44,7 +60,11 @@ public class HpsConsumer {
     }
 
     public void setEmail(String email) {
-        this.email = email;
+		try {
+			this.email = HpsInputValidation.checkValidEmail(email);
+		} catch (HpsInvalidRequestException e) {
+			e.printStackTrace();
+		}		
     }
 
     public HpsAddress getAddress() {

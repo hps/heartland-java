@@ -34,11 +34,9 @@ public class PaxTcpInterface implements IDeviceCommInterface {
         this.await = new AutoResetEvent(false);
     }
 
-    @Override
     public void connect() {
     }
 
-    @Override
     public void disconnect() {
     }
 
@@ -112,7 +110,6 @@ public class PaxTcpInterface implements IDeviceCommInterface {
         }
     }
 
-    @Override
     public byte[] send(IDeviceMessage message) throws HpsMessageException {
         _connect();
 

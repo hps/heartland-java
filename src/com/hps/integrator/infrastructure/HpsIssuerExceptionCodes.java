@@ -13,5 +13,9 @@ public enum HpsIssuerExceptionCodes {
     CardDeclined,
     ProcessingError,
     IssuerTimeoutReversalError,
-    UnknownCreditError
+    UnknownCreditError,
+    UnknownGiftError,
+    PartialApproval,
+    InvalidCardData,
+    UnknownIssuerError
 }
