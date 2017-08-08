@@ -2,7 +2,6 @@ package com.hps.integrator.services;
 
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.applepay.ecv1.PaymentData;
-import com.hps.integrator.applepay.ecv1.PaymentData3DS;
 import com.hps.integrator.entities.*;
 import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.infrastructure.*;
@@ -12,10 +11,8 @@ import com.hps.integrator.infrastructure.validation.HpsIssuerResponseValidation;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
+
 
 public class HpsCreditService extends HpsSoapGatewayService {
     HpsTransactionType filterBy;
@@ -63,12 +60,18 @@ public class HpsCreditService extends HpsSoapGatewayService {
 
     public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
         return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false);
-    }
+    } 
     public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount) throws HpsException {
-    	return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false,convenienceAmount,null);
+        return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false,convenienceAmount,null, null, null, null);
     }
     public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount,BigDecimal shippingAmount) throws HpsException {
-    	return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false,convenienceAmount,shippingAmount);
+       return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false,convenienceAmount,shippingAmount, null, null, null);
+    }
+    public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount,BigDecimal shippingAmount, HpsTagDataType tagData, HpsTrackData trackData) throws HpsException {
+    	return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false,convenienceAmount,shippingAmount, tagData, trackData, null);
+    }
+    public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount,BigDecimal shippingAmount, HpsTagDataType tagData, HpsTrackData trackData, HpsEMVDataType emvData) throws HpsException {
+       return charge(amount, currency, card, cardHolder, allowDuplicates, false, null, null, null, false, false, false,convenienceAmount,shippingAmount, tagData, trackData, emvData);
     }
     public HpsCharge charge(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
         HpsTokenData tokenData = new HpsTokenData();
@@ -174,7 +177,7 @@ public class HpsCreditService extends HpsSoapGatewayService {
     }
     public HpsCharge charge(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,
             boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, HpsDirectMarketData directMarketData,
-            boolean cpcRequest, boolean cardPresent, boolean readerPresent,BigDecimal convenienceAmount,BigDecimal shippingAmount) throws HpsException {
+            boolean cpcRequest, boolean cardPresent, boolean readerPresent,BigDecimal convenienceAmount,BigDecimal shippingAmount, HpsTagDataType tagData, HpsTrackData trackData, HpsEMVDataType emvData) throws HpsException {
 		HpsInputValidation.checkAmount(amount);
 		HpsInputValidation.checkCurrency(currency);
 
@@ -191,7 +194,12 @@ public class HpsCreditService extends HpsSoapGatewayService {
 		    HpsInputValidation.checkAmount(shippingAmount);
 		    Et.subElement(block1, "ShippingAmtInfo").text(shippingAmount.toString());
 		 }
-				
+		if(tagData != null) {
+            block1.append(hydrateTagData(tagData));
+        }
+		if(emvData != null) {
+            block1.append(hydrateEMVData(emvData));
+        }
 		if(cardHolder != null)
 		   block1.append(hydrateCardHolder(cardHolder));
 		
@@ -201,6 +209,9 @@ public class HpsCreditService extends HpsSoapGatewayService {
 		if(card.getEncryptionData() != null)
 		    cardData.append(hydrateEncryptionData(card.getEncryptionData()));
 		}
+		if(trackData != null && (tagData!= null || emvData!= null)) {
+            cardData.append(hydrateTrackData(trackData));
+        }
 		Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
 		
 		if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
@@ -389,13 +400,43 @@ public class HpsCreditService extends HpsSoapGatewayService {
 		return new HpsCharge().fromElementTree(response);
 		}
     public HpsAccountVerify verify(HpsCreditCard card) throws HpsException {
-        return this.verify(card, null, false, false, false);
+        return this.verify(card, null, false, false, false, null, null, null);
     }
-
     public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder) throws HpsException {
-        return this.verify(card, cardHolder, false, false, false);
+        return this.verify(card, cardHolder, false, false, false, null, null, null);
     }
+    public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder,HpsTrackData trackData, HpsTagDataType tagData) throws HpsException {
+        return this.verify(card, cardHolder, false, false, false, trackData, tagData, null);
+    }
+    public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder,HpsTrackData trackData, HpsTagDataType tagData, HpsEMVDataType emvData) throws HpsException {
+        return this.verify(card, cardHolder, false, false, false, trackData, tagData, emvData);
+    }
+    public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder, boolean requestMultiUseToken, boolean cardPresent, boolean readerPresent, HpsTrackData trackData, HpsTagDataType tagData, HpsEMVDataType emvData) throws HpsException {
+        Element transaction = Et.element("CreditAccountVerify");
+        Element block1 = Et.subElement(transaction, "Block1");
 
+        if(cardHolder != null)
+            block1.append(hydrateCardHolder(cardHolder));
+
+        Element cardData = Et.subElement(block1, "CardData");
+        if(card != null) {
+            cardData.append(hydrateCardManualEntry(card, cardPresent, readerPresent));
+            if(card.getEncryptionData() != null)
+                cardData.append(hydrateEncryptionData(card.getEncryptionData()));
+        }
+		if(trackData != null ) {
+            cardData.append(hydrateTrackData(trackData));
+        }
+		if(tagData != null) {
+            block1.append(hydrateTagData(tagData));
+        }
+		if(emvData != null) {
+            block1.append(hydrateEMVData(emvData));
+        }
+        Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
+        ElementTree response = submitTransaction(transaction, clientTransactionId);
+        return new HpsAccountVerify().fromElementTree(response);
+    }
     public HpsAccountVerify verify(HpsCreditCard card, HpsCardHolder cardHolder, boolean requestMultiUseToken, boolean cardPresent, boolean readerPresent) throws HpsException {
         Element transaction = Et.element("CreditAccountVerify");
         Element block1 = Et.subElement(transaction, "Block1");
@@ -454,12 +495,17 @@ public class HpsCreditService extends HpsSoapGatewayService {
         return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false);
     }
     public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount) throws HpsException {
-        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false,convenienceAmount,null);
+        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false,convenienceAmount,null, null, null, null);
     }
     public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount,BigDecimal shippingAmount) throws HpsException {
-        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false,convenienceAmount,shippingAmount);
+        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false,convenienceAmount,shippingAmount, null, null, null);
     }
-
+    public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount,BigDecimal shippingAmount, HpsTrackData trackData, HpsTagDataType tagData) throws HpsException {
+        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false,convenienceAmount,shippingAmount, trackData, tagData, null);
+    }
+    public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,BigDecimal convenienceAmount,BigDecimal shippingAmount, HpsTrackData trackData, HpsTagDataType tagData, HpsEMVDataType emvData) throws HpsException {
+        return this.authorize(amount, currency, card, cardHolder, allowDuplicates, false, null, null, false, false, false,convenienceAmount,shippingAmount, trackData, tagData, emvData);
+    }
     public HpsAuthorization authorize(BigDecimal amount, String currency, String token, HpsCardHolder cardHolder, boolean allowDuplicates) throws HpsException {
         HpsTokenData tokenData = new HpsTokenData();
         tokenData.setTokenValue(token);
@@ -562,7 +608,7 @@ public class HpsCreditService extends HpsSoapGatewayService {
     
     public HpsAuthorization authorize(BigDecimal amount, String currency, HpsCreditCard card, HpsCardHolder cardHolder, boolean allowDuplicates,
         boolean requestMultiUseToken, String descriptor, HpsTransactionDetails details, boolean cpcRequest, boolean cardPresent,
-        boolean readerPresent,BigDecimal convenienceAmount,BigDecimal shippingAmount) throws HpsException {
+        boolean readerPresent,BigDecimal convenienceAmount,BigDecimal shippingAmount, HpsTrackData trackData, HpsTagDataType tagData, HpsEMVDataType emvData) throws HpsException {
 		HpsInputValidation.checkAmount(amount);
 		HpsInputValidation.checkCurrency(currency);
 		Element transaction = Et.element("CreditAuth");
@@ -577,7 +623,7 @@ public class HpsCreditService extends HpsSoapGatewayService {
 	     if (shippingAmount != null) {
 			    HpsInputValidation.checkAmount(shippingAmount);
 			    Et.subElement(block1, "ShippingAmtInfo").text(shippingAmount.toString());
-		 }
+		}
 		if(cardHolder != null)
 		block1.append(hydrateCardHolder(cardHolder));
 		
@@ -585,7 +631,15 @@ public class HpsCreditService extends HpsSoapGatewayService {
 		cardData.append(hydrateCardManualEntry(card, cardPresent, readerPresent));
 		if(card.getEncryptionData() != null)
 		cardData.append(hydrateEncryptionData(card.getEncryptionData()));
-		
+		if(trackData != null ) {
+            cardData.append(hydrateTrackData(trackData));
+        }
+		if(tagData != null) {
+            block1.append(hydrateTagData(tagData));
+        }
+		if(emvData != null) {
+            block1.append(hydrateEMVData(emvData));
+        }
 		if(cpcRequest) Et.subElement(block1, "CPCReq").text("Y");
 		Et.subElement(cardData, "TokenRequest").text(requestMultiUseToken ? "Y" : "N");
 		if(details != null)

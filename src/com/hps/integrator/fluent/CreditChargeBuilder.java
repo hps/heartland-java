@@ -2,6 +2,8 @@ package com.hps.integrator.fluent;
 
 import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsEMVDataType;
+import com.hps.integrator.entities.HpsTagDataType;
 import com.hps.integrator.entities.HpsTokenData;
 import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransactionDetails;
@@ -36,7 +38,17 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
     private HpsTxnReferenceData originalTxnReferenceData;
     private BigDecimal convenienceAmount;
     private BigDecimal shippingAmount;
+    private HpsTagDataType tagData;
+    private HpsEMVDataType emvData;
     
+    public CreditChargeBuilder withEMVData(HpsEMVDataType emvData){
+        this.emvData = emvData;
+        return this;
+    }
+    public CreditChargeBuilder withTagData(HpsTagDataType  tagData){
+        this.tagData = tagData;
+        return this;
+    }
     public CreditChargeBuilder withConvenienceAmount(BigDecimal convenienceAmount){
         this.convenienceAmount = convenienceAmount;
         return this;
@@ -200,7 +212,12 @@ public class CreditChargeBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
         }
         if(directMarketData != null)
             block1.append(service.hydrateDirectMarketData(directMarketData));
-
+        if(tagData != null) {
+            block1.append(service.hydrateTagData(tagData));
+        }
+        if(emvData != null) {
+            block1.append(service.hydrateEMVData(emvData));
+        }
         String clientTransactionId = service.getClientTxnId(details);
         ElementTree response = service.submitTransaction(transaction, clientTransactionId);
         return new HpsCharge().fromElementTree(response);

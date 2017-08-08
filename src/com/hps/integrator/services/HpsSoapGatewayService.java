@@ -11,7 +11,6 @@ import com.hps.integrator.infrastructure.*;
 import com.hps.integrator.infrastructure.Element;
 import com.hps.integrator.infrastructure.emums.EncodingType;
 import com.hps.integrator.infrastructure.emums.TokenMappingType;
-import com.hps.integrator.infrastructure.emums.TypeOfPaymentDataType;
 import sun.misc.IOUtils;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -442,9 +441,42 @@ public abstract class HpsSoapGatewayService {
         return null;
     }
 
+    public Element hydrateTagData(HpsTagDataType tagDataType) {
+		if(tagDataType != null) {
+			 Element tagDataElement = Et.element("TagData");
+			 Element tagDataSubElement = Et.subElement(tagDataElement, "TagValues");
+			 if (tagDataType.getTagData() != null) {
+				 tagDataSubElement.text(tagDataType.getTagData().toString());
+			 }
+			 if (tagDataType.getSource() != null) {
+				 tagDataSubElement.set("source", tagDataType.getSource().getValue());
+			 }
+			 return tagDataElement;
+	    }
+	    return null;
+    }
+
+    public Element hydrateEMVData(HpsEMVDataType emvData) {
+		if (emvData != null) {
+			Element emvElement = Et.element("EMVData");
+			if (emvData.getEmvTagData() != null) {
+				Et.subElement(emvElement, "EMVTagData").text(emvData.getEmvTagData().toString());
+			}
+			if (emvData.getEmvPinBlock() != null) {
+				Et.subElement(emvElement, "PINBlock").text(emvData.getEmvPinBlock().toString());
+			}
+			if (emvData.getEmvChipCondition() != null) {
+				Et.subElement(emvElement, "EMVChipCondition").text(emvData.getEmvChipCondition().getValue());
+			}
+			return emvElement;
+		}
+		return null;
+	}
+
     public String getClientTxnId(HpsTransactionDetails details) {
         if(details != null)
             return details.getClientTransactionId();
         return null;
     }
+
 }

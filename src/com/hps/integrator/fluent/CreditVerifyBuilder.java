@@ -1,17 +1,15 @@
 package com.hps.integrator.fluent;
 
-import com.hps.integrator.applepay.ecv1.PaymentData;
-import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsEMVDataType;
+import com.hps.integrator.entities.HpsTagDataType;
 import com.hps.integrator.entities.HpsTokenData;
 import com.hps.integrator.entities.HpsTrackData;
-import com.hps.integrator.entities.HpsTransactionDetails;
 import com.hps.integrator.entities.credit.*;
 import com.hps.integrator.infrastructure.Element;
 import com.hps.integrator.infrastructure.ElementTree;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.services.fluent.HpsFluentCreditService;
 
-import java.math.BigDecimal;
 
 public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditService, HpsAccountVerify> {
     private HpsCreditCard card;
@@ -22,7 +20,17 @@ public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
     private boolean cardPresent = false;
     private boolean readerPresent = false;
     private String clientTransactionId;
+    private HpsTagDataType tagData;
+    private HpsEMVDataType emvData;
 
+    public CreditVerifyBuilder withEMVData(HpsEMVDataType emvData){
+        this.emvData = emvData;
+        return this;
+    }
+    public CreditVerifyBuilder withTagData(HpsTagDataType  tagData){
+        this.tagData = tagData;
+        return this;
+    }
     public CreditVerifyBuilder withCard(HpsCreditCard card){
         this.card = card;
         return this;
@@ -76,7 +84,12 @@ public class CreditVerifyBuilder extends HpsBuilderAbstract<HpsFluentCreditServi
 
         if(cardHolder != null)
             block1.append(service.hydrateCardHolder(cardHolder));
-
+        if(tagData != null) {
+            block1.append(service.hydrateTagData(tagData));
+        }
+        if(emvData != null) {
+            block1.append(service.hydrateEMVData(emvData));
+        }
         Element cardData = Et.subElement(block1, "CardData");
         if(card != null) {
             cardData.append(service.hydrateCardManualEntry(card, cardPresent, readerPresent));

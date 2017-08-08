@@ -2,6 +2,8 @@ package com.hps.integrator.fluent;
 
 import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsEMVDataType;
+import com.hps.integrator.entities.HpsTagDataType;
 import com.hps.integrator.entities.HpsTokenData;
 import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransactionDetails;
@@ -36,7 +38,17 @@ public class CreditAuthBuilder extends HpsBuilderAbstract<HpsFluentCreditService
     private HpsTxnReferenceData originalTxnReferenceData;
     private BigDecimal convenienceAmount;
     private BigDecimal shippingAmount;
+    private HpsTagDataType tagData;
+    private HpsEMVDataType emvData;
     
+    public CreditAuthBuilder withEMVData(HpsEMVDataType emvData){
+        this.emvData = emvData;
+        return this;
+    }
+    public CreditAuthBuilder withTagData(HpsTagDataType  tagData){
+        this.tagData = tagData;
+        return this;
+    }
     public CreditAuthBuilder withConvenienceAmount(BigDecimal convenienceAmount){
         this.convenienceAmount = convenienceAmount;
         return this;
@@ -196,6 +208,12 @@ public class CreditAuthBuilder extends HpsBuilderAbstract<HpsFluentCreditService
             Element refElement = Et.subElement(block1, "OrigTxnRefData");
             Et.subElement(refElement, "AuthCode").text(originalTxnReferenceData.getAuthorizationCode());
             Et.subElement(refElement, "CardNbrLastFour").text(originalTxnReferenceData.getCardNumberLast4());
+        }
+        if(tagData != null) {
+            block1.append(service.hydrateTagData(tagData));
+        }
+        if(emvData !=null) {
+            block1.append(service.hydrateEMVData(emvData));
         }
         if(directMarketData != null)
             block1.append(service.hydrateDirectMarketData(directMarketData));

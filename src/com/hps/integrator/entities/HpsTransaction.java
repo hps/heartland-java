@@ -17,10 +17,18 @@ public class HpsTransaction {
     private String mResponseText;
     private String mReferenceNumber;
     private String mClientTransactionId;
-
+    private String mEmvIssuerResp;
+    
     public HpsTransaction() {}
+    
+    public String getEmvIssuerResp() {
+		return mEmvIssuerResp;
+	}
+	public void setEmvIssuerResp(String emvIssuerResp) {
+		this.mEmvIssuerResp = emvIssuerResp;
+	}
 
-    public HpsTransaction(HpsTransactionHeader header) {
+	public HpsTransaction(HpsTransactionHeader header) {
         mHeader = header;
     }
 
@@ -164,6 +172,9 @@ public class HpsTransaction {
                 }
                 if (item.has("RefNbr")) {
                     this.setReferenceNumber(item.getString("RefNbr"));
+                }
+                if (item.has("EMVIssuerResp")) {
+                    this.setEmvIssuerResp(item.getString("EMVIssuerResp"));
                 }
             }
         }

@@ -2,6 +2,8 @@ package com.hps.integrator.fluent;
 
 import com.hps.integrator.applepay.ecv1.PaymentData;
 import com.hps.integrator.entities.HpsDirectMarketData;
+import com.hps.integrator.entities.HpsEMVDataType;
+import com.hps.integrator.entities.HpsTagDataType;
 import com.hps.integrator.entities.HpsTrackData;
 import com.hps.integrator.entities.HpsTransaction;
 import com.hps.integrator.entities.HpsTransactionDetails;
@@ -36,7 +38,17 @@ public class CreditOfflineChargeBuilder extends HpsBuilderAbstract<HpsFluentCred
     protected String offlineAuthCode;
     protected BigDecimal convenienceAmount;
     protected BigDecimal shippingAmount;
+    protected HpsTagDataType tagData;
+    protected HpsEMVDataType emvData;
     
+    public CreditOfflineChargeBuilder withEMVData(HpsEMVDataType emvData){
+        this.emvData = emvData;
+        return this;
+    }
+    public CreditOfflineChargeBuilder withTagData(HpsTagDataType tagData){
+        this.tagData = tagData;
+        return this;
+    }
     public CreditOfflineChargeBuilder withConvenienceAmount(BigDecimal convenienceAmount){
         this.convenienceAmount = convenienceAmount;
         return this;
@@ -176,7 +188,12 @@ public class CreditOfflineChargeBuilder extends HpsBuilderAbstract<HpsFluentCred
         if(directMarketData != null)
             block1.append(service.hydrateDirectMarketData(directMarketData));
         Et.subElement(block1, "OfflineAuthCode").text(offlineAuthCode);
-
+        if(tagData != null) {
+            block1.append(service.hydrateTagData(tagData));
+        }
+        if(emvData != null) {
+            block1.append(service.hydrateEMVData(emvData));
+        }
         String clientTransactionId = service.getClientTxnId(details);
         ElementTree response = service.submitTransaction(transaction, clientTransactionId);
         HpsTransaction trans = new HpsTransaction().fromElementTree(response);
@@ -206,6 +223,7 @@ public class CreditOfflineChargeBuilder extends HpsBuilderAbstract<HpsFluentCred
     }
 
     private boolean offlineAuthCodeIsNotNull() {
-        return this.offlineAuthCode != null;
+        return (this.offlineAuthCode != null) || ((this.offlineAuthCode==null && tagData.getTagData().length() > 0) || (this.offlineAuthCode==null && emvData.getEmvTagData().length() > 0));
+        
     }
 }
