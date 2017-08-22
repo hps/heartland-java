@@ -202,6 +202,7 @@ public class CreditOfflineAuthBuilder extends HpsBuilderAbstract<HpsFluentCredit
         if(card != null) count++;
         if(trackData != null) count++;
         if(token != null) count++;
+        if(paymentData != null) count++;
 
         return count == 1;
     }
