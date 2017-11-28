@@ -248,10 +248,21 @@ public abstract class HpsSoapGatewayService {
         if(checkHolder.getAddress() != null) {
             HpsAddress address = checkHolder.getAddress();
 
-            Et.subElement(consumerInfo, "Address1").text(address.getAddress());
-            Et.subElement(consumerInfo, "City").text(address.getCity());
-            Et.subElement(consumerInfo, "State").text(address.getState());
-            Et.subElement(consumerInfo, "Zip").text(address.getZip());
+            if (address.getAddress() != null) {
+                Et.subElement(consumerInfo, "Address1").text(address.getAddress());
+            }
+
+            if (address.getCity() != null) {
+                Et.subElement(consumerInfo, "City").text(address.getCity());
+            }
+
+            if (address.getState() != null) {
+                Et.subElement(consumerInfo, "State").text(address.getState());
+            }
+
+            if (address.getZip() != null) {
+                Et.subElement(consumerInfo, "Zip").text(address.getZip());
+            }
         }
 
         if(checkHolder.getCheckName() != null)

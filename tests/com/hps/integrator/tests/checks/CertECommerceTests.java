@@ -1,11 +1,13 @@
 package com.hps.integrator.tests.checks;
 
 import com.hps.integrator.entities.check.HpsCheck;
+import com.hps.integrator.entities.check.HpsCheckHolder;
 import com.hps.integrator.entities.check.HpsCheckResponse;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.infrastructure.emums.AccountTypeType;
 import com.hps.integrator.infrastructure.emums.CheckTypeType;
 import com.hps.integrator.services.HpsCheckService;
+import com.hps.integrator.services.HpsServicesConfig;
 import com.hps.integrator.tests.testdata.TestCheck;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
 import org.junit.Test;
@@ -373,4 +375,28 @@ public class CertECommerceTests {
     }
 
     // end checks-by-web
+
+    @Test
+    public void check_HeartlandACHSale() throws HpsException {
+        HpsServicesConfig config = new HpsServicesConfig();
+        config.setSecretAPIKey("skapi_cert_MbPdAQBL1l4A2ThZoTBKXEdEG1rIi7KAa6Yskl9Nzg");
+
+        HpsCheckHolder checkHolder = new HpsCheckHolder();
+        checkHolder.setCheckName("John Doe");
+
+        HpsCheck check = new HpsCheck();
+        check.setAccountNumber("12345678");
+        check.setRoutingNumber("121122676");
+        check.setSecCode("WEB");
+        check.setAccountType(AccountTypeType.checking);
+        check.setCheckType(CheckTypeType.personal);
+        check.setCheckHolder(checkHolder);
+
+        HpsCheckService service = new HpsCheckService(config);
+        HpsCheckResponse response = service.sale(check, new BigDecimal(22.00));
+
+        assertNotNull(response);
+        assertEquals("0", response.getResponseCode());
+        assertEquals(true, response.getResponseText().contains("Transaction Approved"));
+    }
 }
