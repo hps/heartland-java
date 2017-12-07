@@ -3,16 +3,13 @@ package com.hps.integrator.services;
 import com.google.gson.Gson;
 import com.hps.integrator.abstractions.IHpsServicesConfig;
 import com.hps.integrator.infrastructure.HpsException;
-import org.apache.commons.codec.binary.Base64;
-import sun.misc.IOUtils;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -104,7 +101,7 @@ public abstract class HpsRestGatewayService {
             }
 
             InputStream responseStream = conn.getInputStream();
-            result += new String(IOUtils.readFully(responseStream, conn.getContentLength(), true));
+            result += readFully(responseStream);
             System.out.println(result);
             responseStream.close();
 
@@ -114,7 +111,7 @@ public abstract class HpsRestGatewayService {
             try {
                 if (conn.getResponseCode() == 400) {
                     InputStream errorStream = conn.getErrorStream();
-                    String errorMessage = new String(IOUtils.readFully(errorStream, errorStream.available(), false));
+                    String errorMessage = readFully(errorStream);
                     errorStream.close();
 
                     throw new HpsException(errorMessage, e);
@@ -125,7 +122,16 @@ public abstract class HpsRestGatewayService {
         }
     }
 
-    protected <T> T hydrateObject(String data, Class<T> clazz) {
+    private String readFully(InputStream stream) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        Reader reader = new BufferedReader(new InputStreamReader(stream, Charset.forName("UTF-8")));
+        int c;
+        while((c = reader.read()) != -1)
+            sb.append((char)c);
+        return sb.toString();
+    }
+
+    private <T> T hydrateObject(String data, Class<T> clazz) {
         Gson gson = new Gson();
         return gson.fromJson(data, clazz);
     }
