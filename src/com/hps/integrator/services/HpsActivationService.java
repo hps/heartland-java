@@ -34,6 +34,4 @@ public class HpsActivationService extends HpsRestGatewayService{
         String response = doRequest("GET", "deviceActivationKey", null, null, qs);
         return this.hydrateObject(response, HpsDeviceActivationKeyResponse.class);
     }
-
-
 }

@@ -8,7 +8,7 @@ public class HpsPayPlanServiceConfig extends HpsRestServiceConfig {
 
         // Set urls
         this.CertUrl = "https://cert.api2.heartlandportico.com/Portico.PayPlan.v2/";
-        this.ProdUrl = "https://api-cert.heartlandportico.com/payplan.v2/";
+        this.ProdUrl = "https://api.heartlandportico.com/payplan.v2/";
         this.UatUrl = "https://api-uat.heartlandportico.com/payplan.v2/";
 
     }

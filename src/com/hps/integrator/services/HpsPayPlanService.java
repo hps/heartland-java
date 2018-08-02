@@ -14,7 +14,14 @@ public class HpsPayPlanService extends HpsRestGatewayService {
 
         byte[] encoded = Base64.encodeBase64(servicesConfig.getSecretAPIKey().getBytes());
         String auth = String.format("Basic %s", new String(encoded));
-        _authHeader.put("Authorization", auth);
+        _headers.put("Authorization", auth);
+
+        String developerId = config.getDeveloperId();
+        String versionNumber = config.getVersionNumber();
+
+        if (developerId != null || versionNumber != null) {
+            _headers.put("HPS-Integration", String.format("DeveloperId=%s,VersionNbr=%s", developerId, versionNumber));
+        }
 
         String[] components = config.getSecretAPIKey().split("_");
         String env = components[1].toLowerCase();
@@ -29,7 +36,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
 
     }
 
-    private HashMap<String, String> _authHeader = new HashMap<String, String>();
+    private HashMap<String, String> _headers = new HashMap<String, String>();
     private HashMap<String, String> _pagination = null;
 
 
@@ -56,7 +63,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         if (customer == null)
             throw new HpsInvalidRequestException("customer must be ain instance of HpsPayPlanCustomer");
 
-        String response = this.doRequest("POST", "customers", customer.getEditableFieldsWithValues(), _authHeader, _pagination);
+        String response = this.doRequest("POST", "customers", customer.getEditableFieldsWithValues(), _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanCustomer.class);
     }
@@ -65,7 +72,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         if (customer == null)
             throw new HpsInvalidRequestException("customer must be ain instance of HpsPayPlanCustomer");
 
-        String response = this.doRequest("PUT", "customers/" + customer.getCustomerKey(), customer.getEditableFieldsWithValues(), _authHeader, _pagination);
+        String response = this.doRequest("PUT", "customers/" + customer.getCustomerKey(), customer.getEditableFieldsWithValues(), _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanCustomer.class);
     }
@@ -78,7 +85,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         if (searchFields == null)
             throw new HpsInvalidRequestException("searchFields cannot be null.");
 
-        String response = this.doRequest("POST", "searchCustomers", searchFields, _authHeader, _pagination);
+        String response = this.doRequest("POST", "searchCustomers", searchFields, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanCustomerCollection.class);
     }
@@ -91,7 +98,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
     }
 
     public HpsPayPlanCustomer getCustomer(String customerId) throws HpsException {
-        String response = this.doRequest("GET", "customers/" + customerId, null, _authHeader, _pagination);
+        String response = this.doRequest("GET", "customers/" + customerId, null, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanCustomer.class);
     }
@@ -118,7 +125,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("forceDelete", forceDelete);
 
-        String response = this.doRequest("DELETE", "customers/" + customerId, data, _authHeader, _pagination);
+        String response = this.doRequest("DELETE", "customers/" + customerId, data, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanCustomer.class);
     }
@@ -158,7 +165,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
     public HpsPayPlanPaymentMethodCollection findAllPaymentMethods(HashMap<String, Object> searchFields) throws HpsException {
         if (searchFields == null)
             throw new HpsInvalidRequestException("searchFields cannot be null");
-        String response = this.doRequest("POST", "searchPaymentMethods", searchFields, _authHeader, _pagination);
+        String response = this.doRequest("POST", "searchPaymentMethods", searchFields, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanPaymentMethodCollection.class);
     }
@@ -171,7 +178,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
     }
 
     public HpsPayPlanPaymentMethod getPaymentMethod(String methodId) throws HpsException {
-        String response = this.doRequest("GET", "paymentMethods/" + methodId, null, _authHeader, _pagination);
+        String response = this.doRequest("GET", "paymentMethods/" + methodId, null, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanPaymentMethod.class);
     }
@@ -198,7 +205,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("forceDelete", forceDelete);
 
-        String response = this.doRequest("DELETE", "paymentMethods/" + methodId, data, _authHeader, _pagination);
+        String response = this.doRequest("DELETE", "paymentMethods/" + methodId, data, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanPaymentMethod.class);
     }
@@ -207,14 +214,14 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         HashMap<String, Object> data = method.getEditableFieldsWithValues();
         data.put("customerKey", method.getCustomerKey());
         data.put("accountNumber", method.getAccountNumber());
-        String response =  this.doRequest("POST", "paymentMethodsCreditCard", data, _authHeader, _pagination);
+        String response =  this.doRequest("POST", "paymentMethodsCreditCard", data, _headers, _pagination);
         resetPagination();
         return  response;
     }
 
     private String editCreditCard(HpsPayPlanPaymentMethod method) throws HpsException {
         HashMap<String, Object> data = method.getEditableFieldsWithValues();
-        String response = this.doRequest("PUT", "paymentMethodsCreditCard/" + method.getPaymentMethodKey(), data, _authHeader, _pagination);
+        String response = this.doRequest("PUT", "paymentMethodsCreditCard/" + method.getPaymentMethodKey(), data, _headers, _pagination);
         resetPagination();
         return response;
     }
@@ -222,14 +229,14 @@ public class HpsPayPlanService extends HpsRestGatewayService {
     private String addAch(HpsPayPlanPaymentMethod method) throws HpsException {
         HashMap<String, Object> data = method.getEditableFieldsWithValues();
         data.put("customerKey", method.getCustomerKey());
-        String response = this.doRequest("POST", "paymentMethodsACH", data, _authHeader, _pagination);
+        String response = this.doRequest("POST", "paymentMethodsACH", data, _headers, _pagination);
         resetPagination();
         return response;
     }
 
     private String editAch(HpsPayPlanPaymentMethod method) throws HpsException {
         HashMap<String, Object> data = method.getEditableFieldsWithValues();
-        String response = this.doRequest("PUT", "paymentMethodsACH/" + method.getPaymentMethodKey(), data, _authHeader, _pagination);
+        String response = this.doRequest("PUT", "paymentMethodsACH/" + method.getPaymentMethodKey(), data, _headers, _pagination);
         resetPagination();
         return response;
     }
@@ -244,7 +251,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         data.put("customerKey", schedule.getCustomerKey());
         data.put("numberOfPayments", schedule.getNumberOfPayments());
 
-        String response = this.doRequest("POST", "schedules", data, _authHeader, _pagination);
+        String response = this.doRequest("POST", "schedules", data, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanSchedule.class);
     }
@@ -262,7 +269,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         schedule.setPreviousProcessingDate((schedule.getPreviousProcessingDate() == null || schedule.getPreviousProcessingDate().length() == 0)
                 ? null : schedule.getPreviousProcessingDate());
 
-        String response = this.doRequest("PUT", "schedules/" + schedule.getScheduleKey(), schedule.getEditableFieldsWithValues(), _authHeader, _pagination);
+        String response = this.doRequest("PUT", "schedules/" + schedule.getScheduleKey(), schedule.getEditableFieldsWithValues(), _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanSchedule.class);
     }
@@ -274,7 +281,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
     public HpsPayPlanScheduleCollection findAllSchedules(HashMap<String, Object> searchFields) throws HpsException {
         if (searchFields == null)
             throw new HpsInvalidRequestException("searchFields cannot be null");
-        String response = this.doRequest("POST", "searchSchedules", searchFields, _authHeader, _pagination);
+        String response = this.doRequest("POST", "searchSchedules", searchFields, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanScheduleCollection.class);
     }
@@ -287,7 +294,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
     }
 
     public HpsPayPlanSchedule getSchedule(String scheduleId) throws HpsException {
-        String response = this.doRequest("GET", "schedules/" + scheduleId, null, _authHeader, _pagination);
+        String response = this.doRequest("GET", "schedules/" + scheduleId, null, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanSchedule.class);
     }
@@ -314,7 +321,7 @@ public class HpsPayPlanService extends HpsRestGatewayService {
         HashMap<String, Object> data = new HashMap<String, Object>();
         data.put("forceDelete", forceDelete);
 
-        String response = this.doRequest("DELETE", "schedules/" + scheduleId, data, _authHeader, _pagination);
+        String response = this.doRequest("DELETE", "schedules/" + scheduleId, data, _headers, _pagination);
         resetPagination();
         return this.hydrateObject(response, HpsPayPlanSchedule.class);
     }

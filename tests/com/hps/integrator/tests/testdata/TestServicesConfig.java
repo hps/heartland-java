@@ -44,7 +44,9 @@ public class TestServicesConfig {
 
     public static HpsPayPlanServiceConfig validPayPlanConfig() {
         HpsPayPlanServiceConfig config = new HpsPayPlanServiceConfig();
-        config.setSecretAPIKey("skapi_uat_MY5OAAAUrmIFvLDRpO_ufLlFQkgg0Rms2G8WoI1THQ");
+        config.setSecretAPIKey("skapi_cert_MTyMAQBiHVEAewvIzXVFcmUd2UcyBge_eCpaASUp0A");
+        config.setDeveloperId("002914");
+        config.setVersionNumber("1510");
         return config;
     }
 

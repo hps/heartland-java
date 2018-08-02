@@ -5,6 +5,7 @@ import com.hps.integrator.entities.payplan.HpsPayPlanCustomerCollection;
 import com.hps.integrator.infrastructure.HpsPayPlanCustomerStatus;
 import com.hps.integrator.infrastructure.HpsException;
 import com.hps.integrator.services.HpsPayPlanService;
+import com.hps.integrator.services.HpsPayPlanServiceConfig;
 import com.hps.integrator.tests.testdata.TestServicesConfig;
 import org.junit.Test;
 
@@ -56,6 +57,79 @@ public class PayPlanCustomerTests {
 
         // Fluent version (to be fully implemented at a later date)
         // HpsPayPlanCustomer result = this.service.addCustomer(id, "Bill", "Johnson", "USA").withCity("Dallas").execute();
+
+        assertNotNull(result);
+        assertNotNull(result.getCustomerKey());
+    }
+
+    // Just need general PayPlan test, so no need to test all possible PayPlan requests
+    @Test
+    public void addCustomerNullDeveloperId() throws HpsException {
+        HpsPayPlanServiceConfig config = TestServicesConfig.validPayPlanConfig();
+        config.setDeveloperId(null);
+        HpsPayPlanService service = new HpsPayPlanService(config);
+        String id = generateCustomerId();
+
+        HpsPayPlanCustomer newCustomer = new HpsPayPlanCustomer();
+        newCustomer.setCustomerStatus(HpsPayPlanCustomerStatus.ACTIVE);
+
+        newCustomer.setCustomerIdentifier(id);
+        newCustomer.setFirstName("Bill");
+        newCustomer.setLastName("Johnson");
+        newCustomer.setCompany("Heartland Payment Systems");
+        newCustomer.setCountry("USA");
+        newCustomer.setCustomerStatus(HpsPayPlanCustomerStatus.ACTIVE);
+
+        HpsPayPlanCustomer result = service.addCustomer(newCustomer);
+
+        assertNotNull(result);
+        assertNotNull(result.getCustomerKey());
+    }
+
+    // Just need general PayPlan test, so no need to test all possible PayPlan requests
+    @Test
+    public void addCustomerNullVersionNumber() throws HpsException {
+        HpsPayPlanServiceConfig config = TestServicesConfig.validPayPlanConfig();
+        config.setVersionNumber(null);
+        HpsPayPlanService service = new HpsPayPlanService(config);
+        String id = generateCustomerId();
+
+        HpsPayPlanCustomer newCustomer = new HpsPayPlanCustomer();
+        newCustomer.setCustomerStatus(HpsPayPlanCustomerStatus.ACTIVE);
+
+        newCustomer.setCustomerIdentifier(id);
+        newCustomer.setFirstName("Bill");
+        newCustomer.setLastName("Johnson");
+        newCustomer.setCompany("Heartland Payment Systems");
+        newCustomer.setCountry("USA");
+        newCustomer.setCustomerStatus(HpsPayPlanCustomerStatus.ACTIVE);
+
+        HpsPayPlanCustomer result = service.addCustomer(newCustomer);
+
+        assertNotNull(result);
+        assertNotNull(result.getCustomerKey());
+    }
+
+    // Just need general PayPlan test, so no need to test all possible PayPlan requests
+    @Test
+    public void addCustomerNullDeveloperIdNullVersionNumber() throws HpsException {
+        HpsPayPlanServiceConfig config = TestServicesConfig.validPayPlanConfig();
+        config.setDeveloperId(null);
+        config.setVersionNumber(null);
+        HpsPayPlanService service = new HpsPayPlanService(config);
+        String id = generateCustomerId();
+
+        HpsPayPlanCustomer newCustomer = new HpsPayPlanCustomer();
+        newCustomer.setCustomerStatus(HpsPayPlanCustomerStatus.ACTIVE);
+
+        newCustomer.setCustomerIdentifier(id);
+        newCustomer.setFirstName("Bill");
+        newCustomer.setLastName("Johnson");
+        newCustomer.setCompany("Heartland Payment Systems");
+        newCustomer.setCountry("USA");
+        newCustomer.setCustomerStatus(HpsPayPlanCustomerStatus.ACTIVE);
+
+        HpsPayPlanCustomer result = service.addCustomer(newCustomer);
 
         assertNotNull(result);
         assertNotNull(result.getCustomerKey());
