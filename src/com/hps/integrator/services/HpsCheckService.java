@@ -20,7 +20,7 @@ public class HpsCheckService extends HpsSoapGatewayService {
 
     /**
      * A <b>Sale</b> transaction is used to process a check sale using bank account information as the payment method.
-     * <br></br><br></br>
+     *
      * <b>NOTE:</b> The Portico Gateway supports both GETI and HPS Colonnade for processing check transactions. While
      * the available services are the same regardless of the check processor, the services may have different behaviors.
      * For example, GETI-processed check Sale transactions support the ability to override a check Sale transaction
@@ -29,7 +29,8 @@ public class HpsCheckService extends HpsSoapGatewayService {
      * @param check  The check information.
      * @param amount The amount of the sale.
      * @return The HPS check Response
-     * @throws HpsException, HpsCheckException
+     * @throws HpsException
+     * @throws HpsCheckException
      */
     public HpsCheckResponse sale(HpsCheck check, BigDecimal amount) throws HpsException, HpsCheckException {
         return processTransaction(CheckActionType.sale, check, amount);
@@ -37,7 +38,7 @@ public class HpsCheckService extends HpsSoapGatewayService {
 
     /**
      * A <b>Sale</b> transaction is used to process a check sale using bank account information as the payment method.
-     * <br></br><br></br>
+     *
      * <b>NOTE:</b> The Portico Gateway supports both GETI and HPS Colonnade for processing check transactions. While
      * the available services are the same regardless of the check processor, the services may have different behaviors.
      * For example, GETI-processed check Sale transactions support the ability to override a check Sale transaction
@@ -47,7 +48,8 @@ public class HpsCheckService extends HpsSoapGatewayService {
      * @param amount The amount of the sale.
      * @param clientTransactionId The client's transaction Id.
      * @return The HPS check Response
-     * @throws HpsException, HpsCheckException
+     * @throws HpsException
+     * @throws HpsCheckException
      */
     public HpsCheckResponse sale(HpsCheck check, BigDecimal amount, String clientTransactionId) throws HpsException, HpsCheckException {
         return processTransaction(CheckActionType.sale, check, amount, clientTransactionId);
@@ -55,7 +57,7 @@ public class HpsCheckService extends HpsSoapGatewayService {
 
     /**
      * A <b>Sale</b> transaction is used to process a check return using bank account information.
-     * <br></br><br></br>
+     *
      * <b>NOTE:</b> The Portico Gateway supports both GETI and HPS Colonnade for processing check transactions. While
      * the available services are the same regardless of the check processor, the services may have different behaviors.
      * For example, GETI-processed check Sale transactions support the ability to override a check Sale transaction
@@ -64,7 +66,8 @@ public class HpsCheckService extends HpsSoapGatewayService {
      * @param check  The check information.
      * @param amount The amount of the sale.
      * @return The HPS check Response
-     * @throws HpsException, HpsCheckException
+     * @throws HpsException
+     * @throws HpsCheckException
      */
     public HpsCheckResponse refund(HpsCheck check, BigDecimal amount) throws HpsException, HpsCheckException {
         return processTransaction(CheckActionType.refund, check, amount);
@@ -72,7 +75,7 @@ public class HpsCheckService extends HpsSoapGatewayService {
 
     /**
      * A <b>Sale</b> transaction is used to process a check override using bank account information.
-     * <br></br><br></br>
+     *
      * <b>NOTE:</b> The Portico Gateway supports both GETI and HPS Colonnade for processing check transactions. While
      * the available services are the same regardless of the check processor, the services may have different behaviors.
      * For example, GETI-processed check Sale transactions support the ability to override a check Sale transaction
@@ -81,7 +84,8 @@ public class HpsCheckService extends HpsSoapGatewayService {
      * @param check  The check information.
      * @param amount The amount of the sale.
      * @return The HPS check Response
-     * @throws HpsException, HpsCheckException
+     * @throws HpsException
+     * @throws HpsCheckException
      */
     public HpsCheckResponse override(HpsCheck check, BigDecimal amount) throws HpsException {
         return processTransaction(CheckActionType.override, check, amount);
@@ -154,7 +158,8 @@ public class HpsCheckService extends HpsSoapGatewayService {
      *
      * @param transactionId The transaction ID of charge to void.
      * @return The HPS check Response
-     * @throws HpsException, HpsCheckException
+     * @throws HpsException
+     * @throws HpsCheckException
      */
     public HpsCheckResponse voidSale(Integer transactionId, String clientTransactionId) throws HpsException, HpsCheckException {
         Element transaction = Et.element("CheckVoid");
